@@ -7,6 +7,9 @@ See the launch_* tools for executing these tools.
 
 # Setup
 1. Install gbdxtools **in a new conda environment, this has caused problems for Clara**
+```
+C:\AFOLDER\Somewhere> conda -c digitalglobe install gbdxtools
+```
 2. Test the gbdx install. 
 `python -c "import gbdxtools"`
 3. Enter Python and test the Interface object - this will require creating the .gbdx-config file in the home directory
