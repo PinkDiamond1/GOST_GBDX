@@ -9,4 +9,9 @@ See the launch_* tools for executing these tools.
 1. Install gbdxtools **in a new conda environment, this has caused problems for Clara**
 2. Test the gbdx install. 
 `python -c "import gbdxtools"`
-3. 
+3. Enter Python and test the Interface object - this will require creating the .gbdx-config file in the home directory
+    python
+    from gbdxtools import Interface \n
+    gbdx = Interface()
+    print gbdx.s3.Info
+4. Check out the launch_* scripts to get started
