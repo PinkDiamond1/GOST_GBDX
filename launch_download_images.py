@@ -6,9 +6,12 @@
 ###################################################################################################
 
 import sys, os, inspect
+import geojson
+
 import geopandas as gpd
 
 from gbdxtools import Interface
+from shapely.geometry import shape
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if cmd_folder not in sys.path:
@@ -29,17 +32,27 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #   CatalogImage: Creates reference to image on IDAHO that can then be written locally
 #
 #   Use tasks for larger imagery and CatalogImage for smaller samples
-
+initials = "bps" #This is used to create the output S3 folder 
+location = "BF" #This is used to create the output S3 folder 
 ###Download imagery using tasks
-monroviaImages = ['1030010063809D00', '1040010027575000', '10300100651C4B00','1040010037BEE200','10400100363A2100']
+inputImages = ['103001007C072200']
+#Get the WKT from the geojson.io
+inputGeojson = [[[-1.7200469970703125,12.242049445914912],[-1.322479248046875,12.242049445914912],[-1.322479248046875,12.497587898455158],[-1.7200469970703125,12.497587898455158],[-1.7200469970703125,12.242049445914912]]]
+inPoly = geojson.Polygon(inputGeojson)
+curWKT = shape(inPoly).wkt
+
+###Get the WKT from a Shapefile
+'''
+inputImages = ['1030010063809D00', '1040010027575000', '10300100651C4B00','1040010037BEE200','10400100363A2100']
 inShp = gpd.read_file(r"Q:\WORKINGPROJECTS\ImageryDownload\HCMC Admin Unit UTM WGS84\HCMC_province.shp")
 if not inShp.crs == {'init': u'epsg:4326'}:
     inShp = inShp.to_crs({'init': 'epsg:4326'})
 curWKT = str(inShp.geometry[0])
+'''
 allTasks = []
-for cat_id in monroviaImages:
+for cat_id in inputImages:
     data = gbdx.catalog.get_data_location(cat_id)    
-    x = curTasks.downloadAOP(cat_id, "bps/Monrovia/%s" % cat_id, curWKT)
+    x = curTasks.downloadAOP(cat_id, "%s/%s/%s" % (initials, location, cat_id), curWKT)
     allTasks.append(x)    
 for x in allTasks:
     x.execute()
