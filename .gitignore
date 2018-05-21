@@ -1,2 +1,3 @@
 .gbdx-config
 *.json
+*.pyc

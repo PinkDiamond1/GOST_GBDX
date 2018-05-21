@@ -51,6 +51,11 @@ class gbdxURL(object):
         resultsTasks = requests.get(url,headers=headers)
         return resultsTasks.json()
         
+    def cancelWorkflow(self, task):        
+        url     = 'https://geobigdata.io/workflows/v1/workflows/:%s/cancel' % task
+        headers = {"Authorization": "Bearer " + self.access_token}
+        resultsTasks = requests.get(url,headers=headers)
+        return resultsTasks.json()
     def getS3Creds(self):
         url = "https://geobigdata.io/s3creds/v1/prefix"
         headers = {"Authorization": "Bearer " + self.access_token}
