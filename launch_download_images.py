@@ -33,22 +33,22 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #
 #   Use tasks for larger imagery and CatalogImage for smaller samples
 initials = "bps" #This is used to create the output S3 folder 
-location = "BF" #This is used to create the output S3 folder 
+location = "HCMC_PAN" #This is used to create the output S3 folder 
 ###Download imagery using tasks
-inputImages = ['103001007C072200']
+'''
+inputImages = ['1030010036809D00','1030010027575000','10300100651C4B00','1030010037BEE200','10300100363A2100']
 #Get the WKT from the geojson.io
 inputGeojson = [[[-1.7200469970703125,12.242049445914912],[-1.322479248046875,12.242049445914912],[-1.322479248046875,12.497587898455158],[-1.7200469970703125,12.497587898455158],[-1.7200469970703125,12.242049445914912]]]
 inPoly = geojson.Polygon(inputGeojson)
 curWKT = shape(inPoly).wkt
+'''
 
 ###Get the WKT from a Shapefile
-'''
-inputImages = ['1030010063809D00', '1040010027575000', '10300100651C4B00','1040010037BEE200','10400100363A2100']
+inputImages = ['1030010036809D00','1030010027575000','10300100651C4B00','1030010037BEE200','10300100363A2100']
 inShp = gpd.read_file(r"Q:\WORKINGPROJECTS\ImageryDownload\HCMC Admin Unit UTM WGS84\HCMC_province.shp")
 if not inShp.crs == {'init': u'epsg:4326'}:
     inShp = inShp.to_crs({'init': 'epsg:4326'})
 curWKT = str(inShp.geometry[0])
-'''
 allTasks = []
 for cat_id in inputImages:
     data = gbdx.catalog.get_data_location(cat_id)    

@@ -31,7 +31,7 @@ class GOSTTasks(object):
         data = self.gbdx.catalog.get_data_location(cat_id)                    
         aopParts = self.getImageParts(cat_id, boundingWKT)
         if len(aopParts) > 0:
-            aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts, 
+            aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts)
                                 enable_pansharpen=panSharpen, enable_dra=aopDra, 
                                 enable_acomp=acomp, bands=aopBands)
             workflow = self.gbdx.Workflow([aoptask])
