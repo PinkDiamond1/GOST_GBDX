@@ -26,14 +26,18 @@ class GOSTTasks(object):
     def downloadAOP(self, cat_id, outFolder, boundingWKT, band_type = "MS", aopDra=True, panSharpen=True, acomp=True, aopBands='MS'):
         ''' Uses the AOP Strip Processor to standardize and download tiles
         [outFolder] - s3Folder for storing imagery
-        [boundingWKT] - WKT shape for selecting tiles to process        
+        [boundingWKT] - WKT shape for selecting tiles to process 
+        https://gbdxdocs.digitalglobe.com/docs/advanced-image-preprocessor
         '''
         data = self.gbdx.catalog.get_data_location(cat_id)                    
         aopParts = self.getImageParts(cat_id, boundingWKT)
         if len(aopParts) > 0:
-            aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts, 
+            aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts)
+            '''
+            , 
                                 enable_pansharpen=panSharpen, enable_dra=aopDra, 
                                 enable_acomp=acomp, bands=aopBands)
+            '''
             workflow = self.gbdx.Workflow([aoptask])
 
             # save the outputs to your s3 bucket.  This method only needs a folder specified.
