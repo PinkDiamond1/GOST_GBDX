@@ -17,4 +17,11 @@ gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
-gbdxUrl.monitorWorkflows(sleepTime=15)
+gbdxUrl.monitorWorkflows(sleepTime=180)
+
+
+'''get sceneID from spfeas call
+xx['SUCCEEDED'][0]['tasks'][0]['outputs'][0]['persistLocation'].split("/")[3]
+'''
+
+
