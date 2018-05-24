@@ -36,7 +36,8 @@ orderedIDs = []
 
 for tID in inImages.iterrows():
     if tID[1].ID in ['10300100617CED00','10300100621DA300','103001006441DA00','104001001E1F8100','1040010028022F00']:
-        x = curTasks.createWorkflow(tID[1].ID, tID[1].useful_area_WKT, tID[1].Sensor, "bps/MexicoPoverty_Training/%s" % tID[1].ID,
+        x = curTasks.createWorkflow(tID[1].ID, tID[1].
+        , tID[1].Sensor, "bps/MexicoPoverty_Training/%s" % tID[1].ID,
                     runCarFinder = 0, runSpfeas = 1, downloadImages = 1,
                     aopPan=False, aopDra=False, aopAcomp=True, aopBands='MS',
                     spfeasParams={"triggers":'orb seg ndvi dmp fourier gabor grad hog lac mean pantex saliency sfs', 

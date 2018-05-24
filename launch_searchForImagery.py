@@ -31,6 +31,7 @@ gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
+'''
 #Search for imagery within defined geojson shape
 curShape = [[[-3.9216041564941406,14.924881365256299],[-3.873538970947265,14.924881365256299],[-3.873538970947265,14.957721167065205],[-3.9216041564941406,14.957721167065205],[-3.9216041564941406,14.924881365256299]]]
 inPoly = geojson.Polygon(curShape)
@@ -70,5 +71,3 @@ for shp in inD.iterrows():
     cnt = cnt + 1
 
 finalRes.to_csv(inShape.replace(".shp", "_imagerySearch.csv"))
-
-'''

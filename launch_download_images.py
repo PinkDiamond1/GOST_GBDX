@@ -20,6 +20,14 @@ sys.path.insert(0, r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\G
 from GOST_GBDx_Tools import gbdxTasks
 from GOST_GBDx_Tools import gbdxURL_misc
 
+'''TESTING
+'''
+from gbdxtools import CatalogImage
+inputImages = ['1030010036809D00','1030010027575000','10300100651C4B00','1030010037BEE200','10300100363A2100']
+xx = CatalogImage(inputImages[0])
+xx.ipe_metadata['image']
+
+
 #In order for the interface to be properly authenticated, follow instructions here:
 #   http://gbdxtools.readthedocs.io/en/latest/user_guide.html
 #   For Ben, the .gbdx-config file belongs in C:\Users\WB411133 (CAUSE no one else qill f%*$&ing tell you that)
@@ -52,7 +60,7 @@ curWKT = str(inShp.geometry[0])
 allTasks = []
 for cat_id in inputImages:
     data = gbdx.catalog.get_data_location(cat_id)    
-    x = curTasks.downloadAOP(cat_id, "%s/%s/%s" % (initials, location, cat_id), curWKT)
+    x = curTasks.downloadAOP(cat_id, "%s/%s/%s" % (initials, location, cat_id), curWKT, band_type="PAN")
     allTasks.append(x)    
 for x in allTasks:
     x.execute()
