@@ -50,18 +50,18 @@ def zonalStats(inVector, inRaster, bandNum=1, reProj = False, minVal = '', rastT
                     if minVal != '':
                         masked_data = numpy.ma.masked_where(masked_data < minVal, masked_data)
                         if masked_data.count() > 0:                        
-                            results = [masked_data.sum(), masked_data.min(), masked_data.max(), masked_data.mean()]
+                            results = [masked_data.sum(), masked_data.min(), masked_data.max(), masked_data.mean(), masked_data.std()]
                         else :
                             results = [-1, -1, -1, -1]
                     else:
-                        results = [masked_data.sum(), masked_data.min(), masked_data.max(), masked_data.mean()]
+                        results = [masked_data.sum(), masked_data.min(), masked_data.max(), masked_data.mean(), masked_data.std()]
                 if rastType == 'C':
                     results = numpy.unique(masked_data, return_counts=True)                                        
                 outputData.append(results)
                 
             except Exception as e: 
                 logging.warning("Error %s: %s" % (fCount, e.message) )                               
-                outputData.append([-1, -1, -1, -1])
+                outputData.append([-1, -1, -1, -1, -1])
     return outputData   
     
 class processSpfeas(object):
@@ -78,8 +78,7 @@ class processSpfeas(object):
         self.inputFolder = spfeasFolder        
         for x in os.walk(spfeasFolder):                        
             if x[0] != spfeasFolder:
-                self.tiledFolder = x[0]
-                print self.tiledFolder
+                self.tiledFolder = x[0]                
             for y in x[2]:
                 if y[-4:] == "yaml":
                     self.yamlFile = os.path.join(x[0], y)
@@ -124,7 +123,7 @@ class processSpfeas(object):
             if not f in self.completedTriggers:
                 self.missedTriggers.append(f)
         
-    def generateVRT(self, tempFolder="C:/WBG", gdalCommand="gdalbuildvrt.exe"):
+    def generateVRT(self, tempFolder="C:/Temp", gdalCommand="gdalbuildvrt.exe"):
         '''The vrt of the tiled spfeas results needs to be re-built with relative paths. 
         [optional] tempFolder [string] - the gdalbuildvrt command uses a text file with a list of images
         TODO: There are weird issues with the gdalbuildvrt command - it needs to be run from the WBG folder
@@ -137,7 +136,6 @@ class processSpfeas(object):
                 imageFile.write(image)
                 imageFile.write("\n") 
         curCommand = r"%s -input_file_list %s %s" % (gdalCommand, self.imageListFile, self.spfeasVRT)
-        print curCommand
         subprocess.call(curCommand.split(), shell=True) 
         
     def generateZonalHeaders(self):
@@ -218,15 +216,14 @@ class processSpfeas(object):
         allRes = []
         origD = intersectD
         colNames = self.generateZonalHeaders()
-        print "bands and names: %s - %s" % (totalBands, len(colNames))
-        print colNames
         for bndCnt in range(1, totalBands):    
             logging.info("Looping through band %s of %s" % (bndCnt, totalBands))
             # Run zonal statistics on raster using shapefile
             columnNames = ["%s_SUM" % colNames[bndCnt-1], 
                            "%s_MIN" % colNames[bndCnt-1], 
                            "%s_MAX" % colNames[bndCnt-1], 
-                           "%s_MEAN" % colNames[bndCnt-1]]            
+                           "%s_MEAN" % colNames[bndCnt-1],
+                           "%s_STD" % colNames[bndCnt-1]]            
             curRes = pd.DataFrame(zonalStats(origD, inVRT, bndCnt, True), columns = columnNames)
             # intersectD = pd.concat([intersectD, curRes], axis=1)
             if bndCnt == 1:
