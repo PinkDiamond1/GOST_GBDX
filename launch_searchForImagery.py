@@ -39,7 +39,6 @@ curWKT = shape(inPoly)
 curRes = imagery_search.searchForImages(gbdx, curWKT, "C:/Temp", "Konna", cutoff_date='1-Jan-08', optimal_date='01-May-18')
 curRes.to_csv("C:/Temp/Konna_City_Mali.csv")
                
-'''
 ### Search for imagery within defined shapefile
 #inShape = r"Q:\WORKINGPROJECTS\Mexico_Poverty\agebs\urban_agebs_Buffer_200m_Diss.shp"
 inShape = r"Q:\WORKINGPROJECTS\UrbanChange\Barranquilla.shp"
@@ -51,6 +50,7 @@ if not inD.crs == {'init': u'epsg:4326'}:
 cnt = 0
 allRes = []
 nrows = inD.shape[0]
+'''
 
 for shp in inD.iterrows():      
     aoi = shp[1]['geometry']

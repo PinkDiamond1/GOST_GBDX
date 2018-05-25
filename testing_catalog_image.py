@@ -28,23 +28,31 @@ from GOST_GBDx_Tools import gbdxURL_misc
 gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
-images = ['1040010037BEE200', '10400100363A2100']
+images = ['1040010037BEE200', '10400100363A2100'] #HCMC
+'''
 images = ['10400100280CF300', '103001001DAC9700'] #Konna Mali
 focalArea = [[[-3.888849020004272,14.934797068255058],[-3.8874703645706172,14.934797068255058],[-3.8874703645706172,14.935719677045839],[-3.888849020004272,14.935719677045839],[-3.888849020004272,14.934797068255058]]]
 outFile = "Q:/WORKINGPROJECTS/ImageryDownload/Konna_uint8_RGB_%s.tif"
 inPoly = geojson.Polygon(focalArea)
 curWKT = shape(inPoly).wkt
-'''
 inputShapefile = r"Q:\WORKINGPROJECTS\ImageryDownload\HCMC Admin Unit UTM WGS84\Thu Duc District\ThuDuc_District_Dissolved.shp"
 inShp = gpd.read_file(inputShapefile)
 curWKT = str(inShp.geometry[0])
 '''
 
+#Read in grid shapefile
+inShp = gpd.read_file(r"Q:\WORKINGPROJECTS\ImageryDownload\HCMC Admin Unit UTM WGS84\Thu Duc District\ThuDuc_District_Dissolved_Grid.shp")
+outFile = r"Q:\WORKINGPROJECTS\ImageryDownload\HCMC Admin Unit UTM WGS84\ThucDuc_District_Imagery\%s_uint8_RGB_%s_%s.tif"
+
 for cat_id in images:
     print "Processing %s" % cat_id
-x = CatalogImage(cat_id,pansharpen=True)
-testArea = x.aoi(wkt=curWKT)
-testArea.geotiff(path=outFile % cat_id, dtype='uint8', bands=[1,2,4])
+    x = CatalogImage(cat_id,pansharpen=True)
+    cDate = x.ipe_metadata['image']['acquisitionDate'][:10]
+    for idx, vals in inShp.iterrows(): 
+        curFile = outFile % (cDate, cat_id, vals.id)
+        if not os.path.exists(curFile):
+            testArea = x.aoi(wkt=str(vals.geometry)) 
+            testArea.geotiff(path=curFile, dtype='uint8', bands=[1,2,4])
 
 #testArea.geotiff(path="C:/Temp/HCMC_default.tif")
 #testArea.geotiff(path="C:/Temp/HCMC_uint8.tif",dtype='uint8')
