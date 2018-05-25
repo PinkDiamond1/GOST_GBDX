@@ -33,7 +33,8 @@ class GOSTTasks(object):
         aopParts = self.getImageParts(cat_id, boundingWKT)
         if len(aopParts) > 0:
             aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts,
-                enable_pansharpen=panSharpen, enable_dra=aopDra, enable_acomp=acomp, bands=aopBands)
+                                enable_pansharpen=panSharpen, enable_dra=aopDra, 
+                                enable_acomp=acomp, bands=aopBands)
             workflow = self.gbdx.Workflow([aoptask])
 
             # save the outputs to your s3 bucket.  This method only needs a folder specified.
