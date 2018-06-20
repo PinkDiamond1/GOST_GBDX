@@ -1,11 +1,12 @@
 import sys, os, time, subprocess, requests, json, logging
+import shapely, geojson
 import pandas as pd
 import geopandas as gpd
-import shapely
 
 from time import strftime
 from gbdxtools import Interface
 from gbdxtools import CatalogImage
+from shapely.geometry import shape
 
 
 class GOSTTasks(object):
@@ -13,15 +14,42 @@ class GOSTTasks(object):
         self.gbdx = gbdx        
         self.sensorDict = {"WORLDVIEW02":"WorldView2", "GEOEYE01": "GeoEye1", "QUICKBIRD02":"Quickbird","WORLDVIEW03_VNIR":"WorldView3"}
     
-    def downloadImage(self, cat_id, outFile, boundingBox=None, band_type = "MS", panSharpen=True, acomp=True):
+    def downloadImage(self, cat_id, outFile, boundingBox=None, curWKT=None, 
+        imgChipSize = 1000, band_type = "MS", panSharpen=True, acomp=True):
         ''' Uses the CatalogImage object to download and write data
             http://gbdxtools.readthedocs.io/en/latest/api_reference.html#catalogimage
         '''
         img = CatalogImage(cat_id, pansharpen=panSharpen, band_type=band_type, acomp=acomp)
         if boundingBox:
             img = img.aoi(bbox=boundingBox)
-            
-        img.geotiff(path=outFile)
+        if curWKT:
+            #Intersect the bounds of the curImg and the curWKT
+            b = img.bounds
+            curImageBounds = [[[b[0], b[1]], [b[0], b[3]], [b[2], b[3]], [b[2], b[1]], [b[0], b[1]]]]
+            inPoly = geojson.Polygon(curImageBounds)
+            imgBounds = shape(inPoly)
+            img = img.aoi(wkt=str(imgBounds.intersection(curWKT)))            
+        #If the output image is going to be large, then write the output as tiled results
+        if img.shape[1] > imgChipSize or img.shape[2] > imgChipSize:
+            #Create output directory based on file name
+            outFolder = outFile.replace(".tif", "")
+            try:
+                os.mkdir(outFolder)            
+            except:
+                pass
+            rowSteps = range(0,img.shape[1],imgChipSize)
+            rowSteps.append(img.shape[1])
+            colSteps = range(0,img.shape[2],imgChipSize)
+            colSteps.append(img.shape[2])
+            for rIdx in range(0, len(rowSteps) - 1, 1):
+                for cIdx in range(0, len(colSteps) - 1, 1):
+                    print("Downloading row %s of %s and column %s of %s" % (rIdx, len(rowSteps), cIdx, len(colSteps)))
+                    curChip = img[0:img.shape[0], rowSteps[rIdx]:rowSteps[rIdx + 1], colSteps[cIdx]:colSteps[cIdx + 1]]
+                    outputChip = os.path.join(outFolder, "C%s_R%s.tif" % (cIdx, rIdx))
+                    if not os.path.exists(outputChip):
+                        curChip.geotiff(path=outputChip)
+        else:            
+            img.geotiff(path=outFile)
     
     def downloadAOP(self, cat_id, outFolder, boundingWKT, band_type = "MS", aopDra=True, panSharpen=True, acomp=True, aopBands='MS'):
         ''' Uses the AOP Strip Processor to standardize and download tiles

@@ -19,7 +19,7 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
         cutoff_date = '1-Jan-15',  # images older than this date discarded
         cutoff_nadir = 25, # Images at nadir angles greater than threshold discarded
         cutoff_pan_res = 1, # Images below this resolution discarded
-        accepted_bands = ['PAN_MS1','PAN_MS1_MS2'], #  Images with any other band entry discarded
+        accepted_bands = ['PAN','PAN_MS1','PAN_MS1_MS2'], #  Images with any other band entry discarded
         optimal_date =  '01-Mar-18', # Optimal date (enter as dd-mmm-yy)
         optimal_pan_res = 0.4, # Optimal pan resolution, metres
         optimal_nadir = 0, # optimal image angle. 0 = vertical
