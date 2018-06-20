@@ -37,6 +37,8 @@ for (fIdx in 1:length(inFiles)) {
 
 inD$processed = 0
 inD$processed[which(inD$orb_1_SUM > -999)] = 1
+table(inD$processed)
+
 #curStatus = inD[,c('concat_id','processed')]
 #write.csv(curStatus, "H:/MEX_Pov/Results/curStatus.csv")
 
@@ -45,6 +47,6 @@ shpD@data = cbind(shpD@data, curStatus[,2])
 writeOGR(shpD,"H:/MEX_Pov/AGEBS","urban_agebs_statusUpdate_2018_05_22",driver="ESRI Shapefile") 
 
 processed = inD[which(inD$sfs_18_STD > -999),]
-write.csv(processed, paste(inFolder, "urban_agebs_processed_2018_05_22.csv", sep=""))
+write.csv(processed, paste(inFolder, "urban_agebs_processed_2018_05_29.csv", sep=""))
 unprocessed = inD[which(inD$sfs_18_STD == -999),]
-write.csv(unprocessed, paste(inFolder, "urban_agebs_unprocessed_2018_05_22.csv", sep=""))
+write.csv(unprocessed, paste(inFolder, "urban_agebs_unprocessed_2018_05_29.csv", sep=""))
