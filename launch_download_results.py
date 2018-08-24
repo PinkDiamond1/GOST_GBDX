@@ -22,7 +22,7 @@ from GOST_GBDx_Tools import gbdxURL_misc
 #   For Ben, the .gbdx-config file belongs in C:\Users\WB411133 (CAUSE no one else qill f%*$&ing tell you that)
 gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
-gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
+gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=True)
 
 #Get list of scenes for follow-up
 '''
@@ -41,13 +41,13 @@ xx = gbdxUrl.monitorWorkflows()
 for x in xx['SUCCEEDED']:
     print x['tasks'][0]['outputs'][0]['persistLocation']
 '''
-toDownload = ['10300100533E0000','1040010007959E00','1030010051599300','1030010045946100','1030010041200300','1030010060471400','1030010044968600','1030010056469000','1030010047872800','1030010048190900','1030010045079300','1030010041707200','1040010008379400','1040010013738600']
+toDownload = ['10300100651A0500','1040010037B76500','10400100387BFA00']
 
 initials = 'bps'
-location = r'MexicoPoverty_Training'
+location = r'HCMC_PAN'
 #imageryFiles = r"H:\SriLanka\IMAGE_CSV\Final_Scene_List_LKA.csv"
 #inImages = pd.read_csv(imageryFiles)
-outputFolder = r"H:\MEX_Pov\SpfeasRes_FollowUp"
+outputFolder = r"D:\BogotaImagery"
 s3File = "C:/Temp/s3Contents.txt"
 
 alreadyProcessed = os.listdir(outputFolder)
@@ -60,20 +60,20 @@ with open(s3File) as inFile:
     for f in inFile:
         splitFolder = f.split(" ")
         imageName = splitFolder[-1].replace("\n", "")
-        if imageName.replace("/", "") in toDownload:
+        #if imageName.replace("/", "") in toDownload:
+        try:
+            #Each line in this folder represents a processed image
+            processedScenes.append(imageName.replace("/", ""))
+            curFolder = "s3://gbd-customer-data/%s/%s/%s/%s" % (gbdxUrl.prefix, initials, location, imageName)
+            imageFolder = "%s%s/" % (curFolder, "clippedRaster")
+            resultsFolder = "%s%s/" % (curFolder, "spfeas")
+            #Download spfeas Results
+            curOut = os.path.join(outputFolder, imageName)
             try:
-                #Each line in this folder represents a processed image
-                processedScenes.append(imageName.replace("/", ""))
-                curFolder = "s3://gbd-customer-data/%s/%s/%s/%s" % (gbdxUrl.prefix, initials, location, imageName)
-                imageFolder = "%s%s/" % (curFolder, "clippedRaster")
-                resultsFolder = "%s%s/" % (curFolder, "spfeas")
-                #Download spfeas Results
-                curOut = os.path.join(outputFolder, imageName)
-                try:
-                    os.mkdir(curOut)
-                    xx = gbdxUrl.downloadS3Contents(resultsFolder, curOut, recursive=True)
-                    gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
-                except:
-                    print "%s already exists" % curOut
+                os.mkdir(curOut)
+                xx = gbdxUrl.downloadS3Contents(resultsFolder, curOut, recursive=True)
+                gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
             except:
-                print "Error processing %s" % f
+                print "%s already exists" % curOut
+        except:
+            print "Error processing %s" % f

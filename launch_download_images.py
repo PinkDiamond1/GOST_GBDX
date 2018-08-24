@@ -11,7 +11,10 @@ import geojson
 import geopandas as gpd
 
 from gbdxtools import Interface
+from gbdxtools import ordering
+from gbdxtools import CatalogImage
 from shapely.geometry import shape
+from shapely.wkt import loads
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if cmd_folder not in sys.path:
@@ -29,35 +32,71 @@ gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
+    
 #There are two basic options for downloading Imagery - tasks and CatalogImage
 #   Tasks: Run AOP strip processing and Clip raster to mount new imagery to S3
 #   CatalogImage: Creates reference to image on IDAHO that can then be written locally
 #
 #   Use tasks for larger imagery and CatalogImage for smaller samples
+
+#Download within a kml
+from osgeo import ogr
+from shapely.wkt import loads
+inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
+outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
+inImages = ['1030010008196700','103001000421D700','103001002E6E6A00','104001000F642500','1040010010219200','1040010010076B00','1040010017A81B00','10400100367D2200','10400100382F4900']
+
+#get WKT from KML
+ds = ogr.Open(inKML)
+for lyr in ds:
+    for feat in lyr:
+        geom = feat.GetGeometryRef()
+
+geom.CloseRings()
+curWKT = geom.ExportToIsoWkt()
+
+for catID in inImages:
+    curFolder = outFolder % catID
+    try:
+        os.mkdir(curFolder)
+    except:
+        pass
+    imgStatus = gbdx.ordering.order(catID)
+    curStatus = gbdx.ordering.status(imgStatus)
+    if curStatus[0]['location'] != 'not_delivered':
+        print "Processing %s" % catID
+        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output="INDICES")  
+        print (res)
+    else:
+        print "Ordering %s " % catID
+
+'''
 initials = "bps" #This is used to create the output S3 folder 
-location = "HCMC_PAN" #This is used to create the output S3 folder 
+location = "Bogota" #This is used to create the output S3 folder 
 inputShapes = r"Q:\WORKINGPROJECTS\ImageryDownload\Bogota_ForSarah\bogota_AOI.shp"
 inD = gpd.read_file(inputShapes)
 curWKT = inD.geometry[0]
+#Order imagery
+imagesID = ['102001003EC90B00','102001003EA4F400','102001000B8BF900']
+for id in imagesID:
+    gbdx.ordering.order(id)
+orderingStatus = ['7990ef03-fa0a-451d-9f42-99246eac4ea3','e39d003d-4131-418c-a38d-6d82cb79426b','06f1ac3e-4337-48d0-8be8-b0111c51eb9f']
+for id in orderingStatus:
+    gbdx.ordering.status(id)
+if not inShp.crs == {'init': u'epsg:4326'}:
+    inShp = inShp.to_crs({'init': 'epsg:4326'})
 
 inImages = ['10400100387BFA00','1040010037B76500','10300100651A0500']
 for x in inImages:
     outFile = r"Q:\WORKINGPROJECTS\ImageryDownload\Bogota_ForSarah\%s.tif" % x
     curTasks.downloadImage(x, outFile, curWKT=curWKT)
-
-
-    
         
-'''
 ###Download imagery using tasks
-inShp = gpd.read_file(r"Q:\WORKINGPROJECTS\ImageryDownload\HCMC Admin Unit UTM WGS84\HCMC_province.shp")
-if not inShp.crs == {'init': u'epsg:4326'}:
-    inShp = inShp.to_crs({'init': 'epsg:4326'})
-curWKT = str(inShp.geometry[0])
+inImages = ['1040010037B76500','10300100651A0500']
 allTasks = []
-for cat_id in inputImages:
+for cat_id in inImages:
     data = gbdx.catalog.get_data_location(cat_id)    
-    x = curTasks.downloadAOP(cat_id, "%s/%s/%s" % (initials, location, cat_id), curWKT, band_type="PAN")
+    x = curTasks.downloadAOP(cat_id, "%s/%s/%s" % (initials, location, cat_id), str(curWKT))
     allTasks.append(x)    
 for x in allTasks:
     x.execute()

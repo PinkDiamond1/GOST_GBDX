@@ -163,10 +163,22 @@ class gbdxURL(object):
                 
         subprocess.call([commandFile], shell=True) 
 
-    def monitorWorkflows(self, sleepTime=60):
+    def monitorWorkflows(self, sleepTime=60, focalWorkflows=[]):
+        ''' continuously monitor currently running workflows on GBDx
+        sleepTime [integer] - abount of time to sleep between checks
+        focalWorkflows [list of numbers] - specific workflows to focus on
+        '''
         curWorkflows = self.listWorkflows()
-        failedTasks = []
-        succeededTasks = []
+        #if there are focal workflows, focus only on that
+        if len(focalWorkflows) > 0:        
+            mainWorkflows = []
+            for rID in curWorkflows:
+                if rID in focalWorkflows:
+                    mainWorkflows.append(rID)
+            curWorkflows = mainWorkflows
+                               
+        failedTasks = {}
+        succeededTasks = {}
         stillProcessing = True
         startTime = time.strftime("%H:%M:%S")
         while stillProcessing:
@@ -179,11 +191,9 @@ class gbdxURL(object):
                     if r['state']['event'] in ['started','scheduled', 'running', 'submitted','rescheduling']:
                         stillProcessing = True            
                     elif r['state']['event'] == 'failed':
-                        failedTasks.append(r)
-                        #curWorkflows.pop(count)
+                        failedTasks[r['id']] = r
                     elif r['state']['event'] == 'succeeded':
-                        succeededTasks.append(r)
-                        #curWorkflows.pop(count)
+                        succeededTasks[r['id']] = r
                     else:
                         tPrint("%s - %s - %s" % (startTime, rID, r['state']['event']))
                 except:
