@@ -7,9 +7,9 @@ from shapely.geometry import Polygon
 from affine import Affine
 from rasterio.features import rasterize
 
-from gbdxtools import Interface
-from GOST_GBDx_Tools import gbdxTasks
-from GOST_GBDx_Tools import gbdxURL_misc
+#from gbdxtools import Interface
+#from GOST_GBDx_Tools import gbdxTasks
+#from GOST_GBDx_Tools import gbdxURL_misc
 
 def zonalStats(inVector, inRaster, bandNum=1, reProj = False, minVal = '', rastType='N', verbose=False):
     outputData=[]
@@ -76,7 +76,7 @@ class processSpfeas(object):
         spfeasFolder [string] - folder to be processed
         '''
         self.inputFolder = spfeasFolder        
-        for x in os.walk(spfeasFolder):                        
+        for x in os.walk(spfeasFolder): 
             if x[0] != spfeasFolder:
                 self.tiledFolder = x[0]                
             for y in x[2]:
@@ -87,12 +87,6 @@ class processSpfeas(object):
                         self.getResultsYAML()
         
         self.spfeasVRT = os.path.join(spfeasFolder, "%s.vrt" % os.path.basename(self.tiledFolder))
-        '''
-        try:
-            self.spfeasVRT = glob.glob("%s/*.vrt" % spfeasFolder)[0]
-        except:
-            self.spfeasVRT = ''
-        '''
         self.zonalCSV = self.spfeasVRT.replace(".vrt", "_zonal.csv")
     
     def getResultsYAML(self):

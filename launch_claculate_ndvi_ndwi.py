@@ -42,20 +42,23 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #Download within a kml
 from osgeo import ogr
 from shapely.wkt import loads
-inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
-outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
-inImages = ['2001042515471940000011630030','2001030115415760000011618569','1030010008196700',
-            '103001000421D700','103001002E6E6A00','104001000F642500','1040010010219200',
+inKML = r"D:\Jamaica\PortlandCottage.kml"
+inSHP = r"D:\Jamaica\pCottage.shp"
+outFolder = r"D:\Jamaica\PortlandCottage\%s"
+inImages = ['103001002E6E6A00','104001000F642500','1040010010219200',
             '1040010010076B00','1040010017A81B00','10400100367D2200','10400100382F4900']
-
 #get WKT from KML
 ds = ogr.Open(inKML)
 for lyr in ds:
     for feat in lyr:
         geom = feat.GetGeometryRef()
-
 geom.CloseRings()
 curWKT = geom.ExportToIsoWkt()
+'''
+#get WKT from shapefile
+inD = gpd.read_file(inSHP)
+'''
+
 
 for catID in inImages:
     curFolder = outFolder % catID
