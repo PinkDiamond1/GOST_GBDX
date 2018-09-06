@@ -78,7 +78,7 @@ class GOSTTasks(object):
                     curChip = img[0:img.shape[0], rowSteps[rIdx]:rowSteps[rIdx + 1], colSteps[cIdx]:colSteps[cIdx + 1]]
                     if not os.path.exists(outputChip):
                         if output == "IMAGE":
-                                curChip.geotiff(path=outputChip)
+                            curChip.geotiff(path=outputChip)
                         if output == "INDICES":
                             outImage = self.calculateIndices(curChip, sensor, outputChip) 
         else:            
@@ -154,7 +154,7 @@ class GOSTTasks(object):
     def createWorkflow(self, catalog_id, inputWKT, sensor, outS3Folder,
                     spfeasParams={"triggers":'ndvi mean', "scales":'8 16 32', "block":'4'}, 
                     runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, runLC = 0, downloadImages = 1, 
-                    aopPan=False, aopDra=False, aopAcomp = True, aopBands='MS', inRaster=""):
+                    aopPan=False, aopDra=False, aopAcomp = True, aopBands='Auto', inRaster=""):
         '''
         
         REFERENCE:
@@ -184,7 +184,7 @@ class GOSTTasks(object):
                 clippedRaster = inRaster
             if runSpfeas == 1:
                 #Run spfeas on the panchromatic band (no vegetation calculations)
-                spTask = self.gbdx.Task("spfeas:0.4.1", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
+                spTask = self.gbdx.Task("spfeas:0.4.3", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
                    triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'],
                    gdal_cache=spfeasParams['gdal_cache'], section_size=spfeasParams['section_size'],
                    n_jobs=spfeasParams['n_jobs'])
@@ -206,6 +206,7 @@ class GOSTTasks(object):
                 
             #Define the tasks in your workflow
             workflow = self.gbdx.Workflow(curTasks)
+            workflow.timeout = 36000
 
             # save the outputs to your s3 bucket.  This method only needs a folder specified.  It will create this folder in your gbd-customer-customer-data s3 bucket.
             if runCarFinder == 1:

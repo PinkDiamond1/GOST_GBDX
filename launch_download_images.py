@@ -32,7 +32,6 @@ gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
-    
 #There are two basic options for downloading Imagery - tasks and CatalogImage
 #   Tasks: Run AOP strip processing and Clip raster to mount new imagery to S3
 #   CatalogImage: Creates reference to image on IDAHO that can then be written locally
@@ -42,10 +41,15 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #Download within a kml
 from osgeo import ogr
 from shapely.wkt import loads
-inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
-outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
-inImages = ['1030010008196700','103001000421D700','103001002E6E6A00','104001000F642500','1040010010219200','1040010010076B00','1040010017A81B00','10400100367D2200','10400100382F4900']
+inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Ansongo.kml"
+outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Ansongo\%s"
+inImages = ['1030010063B52300','103001007A0A1100','103001004ED81400','103001004ED81400']
+#Order images
+for id in inImages:
+    cID = gbdx.ordering.order(id)
+    print gbdx.ordering.status(cID)
 
+ 
 #get WKT from KML
 ds = ogr.Open(inKML)
 for lyr in ds:
@@ -71,6 +75,8 @@ for catID in inImages:
         print "Ordering %s " % catID
 
 '''
+
+
 initials = "bps" #This is used to create the output S3 folder 
 location = "Bogota" #This is used to create the output S3 folder 
 inputShapes = r"Q:\WORKINGPROJECTS\ImageryDownload\Bogota_ForSarah\bogota_AOI.shp"

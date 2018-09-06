@@ -44,9 +44,7 @@ from osgeo import ogr
 from shapely.wkt import loads
 inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
 outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
-inImages = ['2001042515471940000011630030','2001030115415760000011618569','1030010008196700',
-            '103001000421D700','103001002E6E6A00','104001000F642500','1040010010219200',
-            '1040010010076B00','1040010017A81B00','10400100367D2200','10400100382F4900']
+inImages = ['103001000421D700']
 
 #get WKT from KML
 ds = ogr.Open(inKML)

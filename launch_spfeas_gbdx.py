@@ -24,39 +24,94 @@ gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
-#Run spfeas on saved clippedRaster
-inS = gpd.read_file(r"Q:\AFRICA\COD\Projects\DRC_Census_Franck\Lubumbashi_WM\Lubumbashi_WM.shp")
+#Run spfeas on each feature in the input image, depending on its intersection with the defined image boundaries
+#Get image boundaries
+inShape = r"Q:\AFRICA\COD\Projects\DRC_Census_Franck\Kinshasai_WM\Kinshasai_1000\Kinshasai_GRID_for_SPFEAS.shp"
+inFile = r"Q:\AFRICA\COD\Projects\DRC_Census_Franck\Kinshasai_WM\Kinshasai\Kinshasai_GRID_imagery_search_selected.csv"
+inD = pd.read_csv(inFile)
+inD = inD.loc[inD.Selected == 1]
+inD = inD.reset_index()
+inDGeom = [loads(x) for x in inD.Full_scene_WKT]
+inDG = gpd.GeoDataFrame(inD.drop(['Full_scene_WKT'], axis=1), geometry=inDGeom)
+
+inS = gpd.read_file(inShape)
+inS.Id = inS.index
 inS = inS.to_crs({'init': u'epsg:4326'})
 
-for catID in ["1040010031293100"]:#, "10400100315E4200"]:
-    inS3Folder = r"s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/bps/cityAnalysis/Lubumbashi_WM/%s/clippedRaster" % catID
-    outFolder = "bps/cityAnalysis/Lubumbashi_WM/%s" % catID
+for idx, row in inS.iterrows():
+    curImage = inDG.loc[inDG.intersects(row.geometry)]
+    for imageIdx, imageRow in curImage.iterrows():
+        catID = imageRow.ID
+        curSensor = imageRow.Sensor
+        outFolder = "bps/cityAnalysis/Kinshasa/%s_%s" % (row.Id, catID)
+        x = curTasks.createWorkflow(catID, str(row.geometry), curSensor, outFolder,
+                        runCarFinder = 0, runSpfeas = 1, runLC = 0, downloadImages = 1,
+                        aopPan=False, aopDra=False, aopAcomp=True, aopBands='AUTO',
+                        spfeasParams={"triggers":'orb seg dmp fourier gabor grad hog lac mean pantex saliency sfs ndvi', 
+                            "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'2000', "n_jobs":'1'})
+    x.execute()
+
+xx = gbdxUrl.monitorWorkflows(sleepTime=300)    
+
+
+
+
+'''
+gbdxUrl.descWorkflow('4940389794301909082')
+
+# Run spfeas and car counting on defined imagery
+inS = gpd.read_file(r"Q:\WORKINGPROJECTS\Indonesia_GBDx\BalikPapan_AOI.shp")
+#inImages = [['104001003E70C400',"WORLDVIEW03_VNIR"],['103001007E75D600','WORLDVIEW02']]
+for catID in ["104001003E70C400"]:#, "10400100315E4200"]:
+    inS3Folder = r"s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/bps/cityAnalysis/Balikpapan/%s/clippedRaster" % catID
+    outFolder = "bps/cityAnalysis/Balikpapan/%s" % catID
     sensor = "WORLDVIEW03_VNIR"
     x = curTasks.createWorkflow(catID, str(inS.geometry[0]), sensor, outFolder,
-                    runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, downloadImages = 0,
+                    runCarFinder = 0, runSpfeas = 0, spfeasLoop = 0, downloadImages = 0, runLC=1,
                     aopPan=False, aopDra=False, aopAcomp=False, aopBands='PAN',
                     spfeasParams={"triggers":'orb seg dmp fourier gabor grad hog lac mean pantex saliency sfs ndvi', 
-                        "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'5000', "n_jobs":'1'}, 
+                        "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'2000', "n_jobs":'1'}, 
                         inRaster = inS3Folder)
+    id1 = x.execute()
+
+xx = gbdxUrl.monitorWorkflows(sleepTime=300)
+#
+for imageSets in inImages:
+    catID = imageSets[0]
+    sensor = imageSets[1]
+    outFolder = "bps/cityAnalysis/Balikpapan/%s" % catID
+    x = curTasks.createWorkflow(catID, str(inS.geometry[0]), sensor, outFolder,
+                    runCarFinder = 1, runSpfeas = 1, spfeasLoop = 0, downloadImages = 1, runLC=1,
+                    aopPan=True, aopDra=False, aopAcomp=True, aopBands='Auto',
+                    spfeasParams={"triggers":'orb seg dmp fourier gabor grad hog lac mean pantex saliency sfs ndvi', 
+                        "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'5000', "n_jobs":'1'})
     id1 = x.execute()
 
 #x.tasks[0].generate_task_workflow_json()
 
 xx = gbdxUrl.monitorWorkflows(sleepTime=60)
 xx['FAILED'][id1]
-
 for k in xx['FAILED'].keys():
     print xx['FAILED'][k]['tasks'][0]['note']
 
-
 for xIdx in xx['FAILED'][id1]['tasks'][0]['inputs']:
     print "%s - %s" % (xIdx['name'], xIdx['value'])
+
+
+#Run spfeas on saved clippedRaster
+inS = gpd.read_file(r"Q:\AFRICA\COD\Projects\DRC_Census_Franck\Lubumbashi_WM\Lubumbashi_WM.shp")
+inS = inS.to_crs({'init': u'epsg:4326'})
+
+
+#x.tasks[0].generate_task_workflow_json()
+
+xx = gbdxUrl.monitorWorkflows(sleepTime=60)
+
 
 id2 = '4934643809165411250'
 xx['FAILED'][id2]
 
 print xx
-'''
 #Order images
 inputImages = ['1030010066932800','103001005AD57300','10300100414D2E00','10504100104D5D00']
 for img in inputImages:
