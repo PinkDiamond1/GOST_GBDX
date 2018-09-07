@@ -38,18 +38,20 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #
 #   Use tasks for larger imagery and CatalogImage for smaller samples
 
+t1 = ['103001007278F400','103001007A0A1100','105001000D50B500','103001006006AB00','103001003F48EC00']
+t0 = ['1030010021D83C00','103001001F5ED500','1030010020157700','1030010020577D00']
+
+#Order images
+for id in t0:
+    cID = gbdx.ordering.order(id)
+    print gbdx.ordering.status(cID)
+ 
 #Download within a kml
 from osgeo import ogr
 from shapely.wkt import loads
 inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Ansongo.kml"
 outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Ansongo\%s"
-inImages = ['1030010063B52300','103001007A0A1100','103001004ED81400','103001004ED81400']
-#Order images
-for id in inImages:
-    cID = gbdx.ordering.order(id)
-    print gbdx.ordering.status(cID)
 
- 
 #get WKT from KML
 ds = ogr.Open(inKML)
 for lyr in ds:

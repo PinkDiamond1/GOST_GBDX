@@ -5,7 +5,7 @@
 #   - see the curFolder, imageFolder, and resultsFolder for specific folders to be downloaded
 ###################################################################################################
 
-import sys, os, inspect
+import sys, os, inspect, logging
 import geojson
 
 import geopandas as gpd
@@ -42,9 +42,15 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #Download within a kml
 from osgeo import ogr
 from shapely.wkt import loads
+'''
 inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
 outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
 inImages = ['103001000421D700']
+'''
+inKML = r"Q:\AFRICA\COD\Projects\NDSV_Urbanization\AOI_Kinshasa.kml"
+outFolder = r"Q:\AFRICA\COD\Projects\NDSV_Urbanization\AOI_Kinshasa\%s"
+inImages = ['103001007FA97400','1030010051656900','103001002F4EE100','1030010011D73D00','1030010006789E00','10100100047CCE00']
+curIndex = "NDSV" #"INDICES"
 
 #get WKT from KML
 ds = ogr.Open(inKML)
@@ -54,6 +60,8 @@ for lyr in ds:
 
 geom.CloseRings()
 curWKT = geom.ExportToIsoWkt()
+
+logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',level=logging.INFO)
 
 for catID in inImages:
     curFolder = outFolder % catID
@@ -72,7 +80,7 @@ for catID in inImages:
         curStatus = gbdx.ordering.status(imgStatus)[0]['location']
     if curStatus != 'not_delivered':
         print "Processing %s" % catID
-        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output="INDICES")  
+        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output=curIndex)  
         print (res)
     else:
         print "Ordering %s " % catID

@@ -8,6 +8,7 @@ import pandas as pd
 import geopandas as gpd
 
 from gbdxtools import Interface
+from shapely.wkt import loads
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if cmd_folder not in sys.path:
@@ -37,21 +38,26 @@ inDG = gpd.GeoDataFrame(inD.drop(['Full_scene_WKT'], axis=1), geometry=inDGeom)
 inS = gpd.read_file(inShape)
 inS.Id = inS.index
 inS = inS.to_crs({'init': u'epsg:4326'})
-
+catIDtoProcess = ['1030010050523000','1030010050523000','102001004C6A7F00','10200100432B8600','10200100432B8600','102001004C6A7F00','10200100432B8600','1020010052D3D000','1020010052D3D000','102001004C6A7F00','10200100432B8600','1020010052D3D000','10200100432B8600','102001004C6A7F00','1020010052D3D000','102001004C6A7F00','10200100432B8600','102001004C6A7F00','10200100432B8600','102001004C6A7F00']
+shpToProcess = [21,2,0,11,13,14,15,16,17,19,22,24,26,28,31,33,5,6,8,9]
+inS = inS.loc[[x in shpToProcess for x in inS.Id]]
+allIDs = []
 for idx, row in inS.iterrows():
     curImage = inDG.loc[inDG.intersects(row.geometry)]
     for imageIdx, imageRow in curImage.iterrows():
         catID = imageRow.ID
         curSensor = imageRow.Sensor
         outFolder = "bps/cityAnalysis/Kinshasa/%s_%s" % (row.Id, catID)
+        curRasterFolder = os.path.join('s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/%s/clippedRaster' % outFolder)
         x = curTasks.createWorkflow(catID, str(row.geometry), curSensor, outFolder,
-                        runCarFinder = 0, runSpfeas = 1, runLC = 0, downloadImages = 1,
+                        runCarFinder = 0, runSpfeas = 1, runLC = 0, downloadImages = 0,
                         aopPan=False, aopDra=False, aopAcomp=True, aopBands='AUTO',
                         spfeasParams={"triggers":'orb seg dmp fourier gabor grad hog lac mean pantex saliency sfs ndvi', 
-                            "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'2000', "n_jobs":'1'})
-    x.execute()
+                            "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'2000', "n_jobs":'1'}, 
+                            inRaster = curRasterFolder)
+    allIDs.append(x.execute())
 
-xx = gbdxUrl.monitorWorkflows(sleepTime=300)    
+xx = gbdxUrl.monitorWorkflows(sleepTime=300, focalWorkflows=allIDs)    
 
 
 

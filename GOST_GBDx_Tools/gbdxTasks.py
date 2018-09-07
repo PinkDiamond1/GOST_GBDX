@@ -6,7 +6,6 @@ import geopandas as gpd
 import dask.array as da
 
 from time import strftime
-from gbdxtools import Interface
 from gbdxtools import CatalogImage
 from shapely.geometry import shape
 
@@ -15,6 +14,40 @@ class GOSTTasks(object):
     def __init__(self, gbdx):
         self.gbdx = gbdx        
         self.sensorDict = {"WORLDVIEW01":"WorldView1", "WORLDVIEW02":"WorldView2", "GEOEYE01": "GeoEye1", "QUICKBIRD02":"Quickbird","WORLDVIEW03_VNIR":"WorldView3"}   
+    
+    def calculateNDSV(self, inD, sensor, outFile):
+        '''The Normalized Difference Spectral Vector normalizes all bands in an image against each other
+        REFERENCE: https://ieeexplore.ieee.org/document/6587128/
+        
+        INPUTS
+        inD [3D dask array] - input imagery from GBDx CatalogImage
+        sensor - definition of input sensor
+        outFile - output image chip
+        DEBUG
+        inD = CatalogImage('103001007FA97400')
+        inD = inD[:,0:1000,0:1000]
+        '''
+        nBands = inD.shape[0]
+        
+        bandNames = []   
+        allRes = []        
+        for b1 in range(0, nBands):
+            for b2 in range(0, nBands):
+                if b1 < b2:
+                    cMetric = (inD[b1,:,:] - inD[b2,:,:]) / (inD[b1,:,:] + inD[b2,:,:])
+                    #Convert cMetric to byte
+                    cMetric = (cMetric * 100) + 100
+                    cMetric = cMetric.astype('uint8')
+                    bandNames.append("%s_%s" % (b1, b2))
+                    allRes.append(cMetric)
+        outData = da.stack(allRes)
+        #calculate indices        
+        metadata = inD.ipe.metadata
+        newDataset = rasterio.open(outFile, 'w', driver="GTiff", dtype='uint8',
+                                    count=outData.shape[0],height=outData.shape[1],width=outData.shape[2],
+                                    crs=inD.proj,transform=inD.affine)
+        newDataset.write(outData)
+        newDataset.close()
     
     def calculateIndices(self, inD, sensor, outFile):
         outImage = inD[0:2,:,:]
@@ -45,6 +78,14 @@ class GOSTTasks(object):
         imgChipSize = 1000, band_type = "MS", panSharpen=True, acomp=True, getOutSize=False):
         ''' Uses the CatalogImage object to download and write data
             http://gbdxtools.readthedocs.io/en/latest/api_reference.html#catalogimage
+            
+        INPUT
+        cat_id [string] - CatalogID for Digital Globe that is present in IDAHO
+        outFile [string] - path to output image
+        OPTIONAL INPUTS
+        output [string] [IMAGE, INDICES NDSV] - what kind of image to return. IMAGE is the raw imagery, 
+            INDICES returns a stacked NDVI, NDWI and NDSV return the Normalized Differece Spectral Vector
+        boundingBox []        
         '''
         img = CatalogImage(cat_id, pansharpen=panSharpen, band_type=band_type, acomp=acomp)
         sensor = img.ipe_metadata['image']['sensorPlatformName']
@@ -73,14 +114,17 @@ class GOSTTasks(object):
             colSteps.append(img.shape[2])
             for rIdx in range(0, len(rowSteps) - 1, 1):
                 for cIdx in range(0, len(colSteps) - 1, 1):
-                    print("Downloading row %s of %s and column %s of %s" % (rIdx, len(rowSteps), cIdx, len(colSteps)))
+                    logging.info("Downloading row %s of %s and column %s of %s" % (rIdx, len(rowSteps), cIdx, len(colSteps)))
                     outputChip = os.path.join(outFolder, "C%s_R%s.tif" % (cIdx, rIdx))
                     curChip = img[0:img.shape[0], rowSteps[rIdx]:rowSteps[rIdx + 1], colSteps[cIdx]:colSteps[cIdx + 1]]
                     if not os.path.exists(outputChip):
                         if output == "IMAGE":
                             curChip.geotiff(path=outputChip)
                         if output == "INDICES":
-                            outImage = self.calculateIndices(curChip, sensor, outputChip) 
+                            outImage = self.calculateIndices(curChip, sensor, outputChip)
+                        if output == 'NDSV':
+                            outImage = self.calculateNDSV(curChip, sensor, outputChip)
+                        
         else:            
             img.geotiff(path=outFile)
         return 1

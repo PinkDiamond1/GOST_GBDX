@@ -32,7 +32,7 @@ curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
 ### Search for imagery within defined shapefile
-inShape = r"Q:\WORKINGPROJECTS\Indonesia_GBDx\BalikPapan_AOI\BalikPapan_AOI_GRID.shp"
+inShape = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Ansongo_AOI.shp"
 inD = gpd.read_file(inShape)
 if not inD.crs == {'init': u'epsg:4326'}:
     inD = inD.to_crs({'init': 'epsg:4326'})
@@ -40,7 +40,7 @@ cnt = 0
 allRes = []
 nrows = inD.shape[0]
 curRes = imagery_search.searchForImages(gbdx, inD.geometry.unary_union, os.path.dirname(inShape), 
-                    str(cnt), cutoff_date='1-Jan-12', optimal_date='01-Sep-18')
+                    str(cnt), cutoff_date='1-Jan-00', optimal_date='01-Sep-18')
 
 curRes.to_csv(inShape.replace(".shp", "_imagerySearch.csv"))
 
