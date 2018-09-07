@@ -5,7 +5,7 @@
 #   - see the curFolder, imageFolder, and resultsFolder for specific folders to be downloaded
 ###################################################################################################
 
-import sys, os, inspect
+import sys, os, inspect, logging
 import geojson
 
 import geopandas as gpd
@@ -21,7 +21,6 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 sys.path.insert(0, r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\GOST_GBDx")
-sys.path.insert(0, r"C:\Code\Github\GOST_GBDx")
 from GOST_GBDx_Tools import gbdxTasks
 from GOST_GBDx_Tools import gbdxURL_misc
 from gbdxtools import CatalogImage
@@ -43,25 +42,26 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #Download within a kml
 from osgeo import ogr
 from shapely.wkt import loads
-inKML = r"D:\Jamaica\PortlandCottage.kml"
-inSHP = r"D:\Jamaica\pCottage.shp"
-outFolder = r"D:\Jamaica\PortlandCottage\%s"
-inImages = ['2001042515471940000011630030','2001030115415760000011618569','1030010008196700','103001000421D700']
-#,'1010010004BBD200'
+'''
+inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
+outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
+inImages = ['103001000421D700']
+'''
+inKML = r"Q:\AFRICA\COD\Projects\NDSV_Urbanization\AOI_Kinshasa.kml"
+outFolder = r"Q:\AFRICA\COD\Projects\NDSV_Urbanization\AOI_Kinshasa\%s"
+inImages = ['103001007FA97400','1030010051656900','103001002F4EE100','1030010011D73D00','1030010006789E00','10100100047CCE00']
+curIndex = "NDSV" #"INDICES"
 
 #get WKT from KML
 ds = ogr.Open(inKML)
-for lyr in ds:
+for lyr in ds: 
     for feat in lyr:
         geom = feat.GetGeometryRef()
 
 geom.CloseRings()
 curWKT = geom.ExportToIsoWkt()
-'''
-#get WKT from shapefile
-inD = gpd.read_file(inSHP)
-'''
 
+logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s',level=logging.INFO)
 
 for catID in inImages:
     curFolder = outFolder % catID
@@ -80,7 +80,7 @@ for catID in inImages:
         curStatus = gbdx.ordering.status(imgStatus)[0]['location']
     if curStatus != 'not_delivered':
         print "Processing %s" % catID
-        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output="INDICES")  
+        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output=curIndex)  
         print (res)
     else:
         print "Ordering %s " % catID
