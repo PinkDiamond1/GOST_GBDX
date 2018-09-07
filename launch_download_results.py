@@ -22,7 +22,7 @@ from GOST_GBDx_Tools import gbdxURL_misc
 #   For Ben, the .gbdx-config file belongs in C:\Users\WB411133 (CAUSE no one else qill f%*$&ing tell you that)
 gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
-gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=True)
+gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=False)
 
 #Get list of scenes for follow-up
 '''
@@ -44,10 +44,12 @@ for x in xx['SUCCEEDED']:
 toDownload = ['10300100651A0500','1040010037B76500','10400100387BFA00']
 
 initials = 'bps'
-location = r'HCMC_PAN'
+location = r'cityAnalysis/Balikpapan'
 #imageryFiles = r"H:\SriLanka\IMAGE_CSV\Final_Scene_List_LKA.csv"
 #inImages = pd.read_csv(imageryFiles)
-outputFolder = r"D:\BogotaImagery"
+outputFolder = r"D:\%s\%s" % (initials, location)
+if not os.path.exists(outputFolder):
+    os.makedirs(outputFolder)
 s3File = "C:/Temp/s3Contents.txt"
 
 alreadyProcessed = os.listdir(outputFolder)
@@ -71,7 +73,7 @@ with open(s3File) as inFile:
             curOut = os.path.join(outputFolder, imageName)
             try:
                 os.mkdir(curOut)
-                xx = gbdxUrl.downloadS3Contents(resultsFolder, curOut, recursive=True)
+                xx = gbdxUrl.downloadS3Contents(curFolder, curOut, recursive=True)
                 gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
             except:
                 print "%s already exists" % curOut

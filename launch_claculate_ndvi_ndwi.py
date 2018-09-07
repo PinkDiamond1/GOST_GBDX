@@ -21,6 +21,7 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 sys.path.insert(0, r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\GOST_GBDx")
+sys.path.insert(0, r"C:\Code\Github\GOST_GBDx")
 from GOST_GBDx_Tools import gbdxTasks
 from GOST_GBDx_Tools import gbdxURL_misc
 from gbdxtools import CatalogImage
@@ -45,13 +46,15 @@ from shapely.wkt import loads
 inKML = r"D:\Jamaica\PortlandCottage.kml"
 inSHP = r"D:\Jamaica\pCottage.shp"
 outFolder = r"D:\Jamaica\PortlandCottage\%s"
-inImages = ['103001002E6E6A00','104001000F642500','1040010010219200',
-            '1040010010076B00','1040010017A81B00','10400100367D2200','10400100382F4900']
+inImages = ['2001042515471940000011630030','2001030115415760000011618569','1030010008196700','103001000421D700']
+#,'1010010004BBD200'
+
 #get WKT from KML
 ds = ogr.Open(inKML)
 for lyr in ds:
     for feat in lyr:
         geom = feat.GetGeometryRef()
+
 geom.CloseRings()
 curWKT = geom.ExportToIsoWkt()
 '''

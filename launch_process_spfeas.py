@@ -10,10 +10,10 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 from GOST_GBDx_Tools import spfeas_results
 
-inFolder = r"H:\MEX_Pov\SpfeasRes_FollowUp"
-outFolder = r"H:\MEX_Pov\UrbanAgebs"
-inShp = r"H:\MEX_Pov\AGEBS\urban_agebs.shp"
-with open(r"H:\MEX_Pov\missedTriggers.csv", 'w') as missedTriggersFile:
+inFolder = r"D:\DRC_Census\GOMA\spfeas"
+outFolder = inFolder
+inShp = r"D:\DRC_Census\GOMA\Goma_WM\Goma_WM_GRID.shp"
+with open(os.path.join(outFolder, "missedTriggers.csv"), 'w') as missedTriggersFile:
     for f in os.listdir(inFolder):
         print f
         try:
