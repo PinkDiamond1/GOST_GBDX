@@ -44,7 +44,7 @@ for x in xx['SUCCEEDED']:
 toDownload = ['10300100651A0500','1040010037B76500','10400100387BFA00']
 
 initials = 'bps'
-location = r'cityAnalysis/Balikpapan'
+location = r'Mali/Ansongo'
 #imageryFiles = r"H:\SriLanka\IMAGE_CSV\Final_Scene_List_LKA.csv"
 #inImages = pd.read_csv(imageryFiles)
 outputFolder = r"D:\%s\%s" % (initials, location)
@@ -73,7 +73,7 @@ with open(s3File) as inFile:
             curOut = os.path.join(outputFolder, imageName)
             try:
                 os.mkdir(curOut)
-                xx = gbdxUrl.downloadS3Contents(curFolder, curOut, recursive=True)
+                xx = gbdxUrl.downloadS3Contents(imageFolder, curOut, recursive=True)
                 gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
             except:
                 print "%s already exists" % curOut

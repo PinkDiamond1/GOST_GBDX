@@ -21,6 +21,7 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 sys.path.insert(0, r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\GOST_GBDx")
+sys.path.insert(0, r"C:\Code\Github\GOST_GBDX")
 from GOST_GBDx_Tools import gbdxTasks
 from GOST_GBDx_Tools import gbdxURL_misc
 from gbdxtools import CatalogImage
@@ -38,7 +39,28 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #   CatalogImage: Creates reference to image on IDAHO that can then be written locally
 #
 #   Use tasks for larger imagery and CatalogImage for smaller samples
+'''
+'''
+inputShapes = r"D:\Mali\inputData\Ansongo_AOI.shp"
+inD = gpd.read_file(inputShapes)
+curWKT = inD.geometry[0]
+inImages = ['103001007A0A1100','105001000D50B500','103001007278F400','10300100677C8C00','10400100266D5700','103001006006AB00','103001003F48EC00']
 
+for catID in inImages:
+    imgStatus = gbdx.ordering.order(catID)
+    curStatus = gbdx.ordering.status(imgStatus)
+    if curStatus[0]['location'] != 'not_delivered':
+        print "Processing %s" % catID
+        x = curTasks.createWorkflow(catID, str(curWKT), "", "bps/Mali/Ansongo/%s" % catID,
+                    runCarFinder = 0, runSpfeas = 0, downloadImages = 1,
+                    aopPan=True, aopDra=True, aopAcomp=True, aopBands='AUTO')
+        x.execute()
+    else:
+        print "Ordering %s " % catID
+xx = gbdxUrl.monitorWorkflows(sleepTime=300)
+print xx
+
+'''
 #Download within a kml
 from osgeo import ogr
 from shapely.wkt import loads
@@ -54,23 +76,6 @@ for lyr in ds:
 
 geom.CloseRings()
 curWKT = geom.ExportToIsoWkt()
-
-for catID in inImages:
-    curFolder = outFolder % catID
-    try:
-        os.mkdir(curFolder)
-    except:
-        pass
-    imgStatus = gbdx.ordering.order(catID)
-    curStatus = gbdx.ordering.status(imgStatus)
-    if curStatus[0]['location'] != 'not_delivered':
-        print "Processing %s" % catID
-        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output="INDICES")  
-        print (res)
-    else:
-        print "Ordering %s " % catID
-
-'''
 initials = "bps" #This is used to create the output S3 folder 
 location = "Bogota" #This is used to create the output S3 folder 
 inputShapes = r"Q:\WORKINGPROJECTS\ImageryDownload\Bogota_ForSarah\bogota_AOI.shp"
