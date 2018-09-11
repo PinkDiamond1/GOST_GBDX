@@ -11,12 +11,13 @@ import geopandas as gpd
 
 from gbdxtools import Interface
 from shapely.geometry import shape
+from osgeo import ogr
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-manualCurFolder = r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\GOST\GBDx"
+manualCurFolder = r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\GOST_GBDx"
 sys.path.insert(0, manualCurFolder)
 
 from GOST_GBDx_Tools import gbdxTasks
@@ -32,14 +33,26 @@ curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
 ### Search for imagery within defined shapefile
-inShape = r"Q:\WORKINGPROJECTS\Indonesia_GBDx\BalikPapan_AOI\BalikPapan_AOI_GRID.shp"
+inShape = r"Q:/WORKINGPROJECTS/ImageryDownload/Mali_Keith/Konna_Koanna_1kmBuffer.shp"
 inD = gpd.read_file(inShape)
 if not inD.crs == {'init': u'epsg:4326'}:
     inD = inD.to_crs({'init': 'epsg:4326'})
 cnt = 0
 allRes = []
 nrows = inD.shape[0]
-curRes = imagery_search.searchForImages(gbdx, inD.geometry.unary_union, os.path.dirname(inShape), 
+'''
+inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Konna-Koana.kml"
+#get WKT from KML
+ds = ogr.Open(inKML)
+for lyr in ds: 
+    for feat in lyr:
+        geom = feat.GetGeometryRef()
+        print geom
+geom.CloseRings()
+curWKT = geom.ExportToIsoWkt()
+'''
+
+curRes = imagery_search.searchForImages(gbdx, inD.geometry.unary_union, os.path.dirname(inKML), 
                     str(cnt), cutoff_date='1-Jan-12', optimal_date='01-Sep-18')
 
 curRes.to_csv(inShape.replace(".shp", "_imagerySearch.csv"))
@@ -55,16 +68,7 @@ curRes = imagery_search.searchForImages(gbdx, curWKT, "C:/Temp", "Balikpanana", 
 curRes.to_csv("C:/Temp/Balikpapan.csv")
 
 #Search for imagery within KML file
-###This doesn't work, converting to shapefile
-#C:\WBG>python pip-script.py install fastkml
-from fastkml import kml
-inKML = r"Q:\WORKINGPROJECTS\DRC_Road_To_Konna\Konna-Koana.kml"
-with open(inKML, 'rt') as myfile:
-    doc=myfile.read()
-k = kml.KML()
-k.from_string(doc)
-features = list(k.features())
-firstFeat = list(features[0].features())[0]
+
 
 
 ### Search for imagery within defined shapefile
