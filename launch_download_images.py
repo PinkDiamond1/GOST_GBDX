@@ -42,10 +42,11 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #Download within a kml
 from osgeo import ogr
 from shapely.wkt import loads
+
+'''
 inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
 outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
 inImages = ['1030010008196700','103001000421D700','103001002E6E6A00','104001000F642500','1040010010219200','1040010010076B00','1040010017A81B00','10400100367D2200','10400100382F4900']
-
 #get WKT from KML
 ds = ogr.Open(inKML)
 for lyr in ds:
@@ -54,7 +55,6 @@ for lyr in ds:
 
 geom.CloseRings()
 curWKT = geom.ExportToIsoWkt()
-
 for catID in inImages:
     curFolder = outFolder % catID
     try:
@@ -69,13 +69,23 @@ for catID in inImages:
         print (res)
     else:
         print "Ordering %s " % catID
-
 '''
-initials = "bps" #This is used to create the output S3 folder 
-location = "Bogota" #This is used to create the output S3 folder 
-inputShapes = r"Q:\WORKINGPROJECTS\ImageryDownload\Bogota_ForSarah\bogota_AOI.shp"
+
+inputShapes = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Konna_Koanna_1kmBuffer.shp"
 inD = gpd.read_file(inputShapes)
-curWKT = inD.geometry[0]
+curWKT = str(inD.geometry[0])
+inImages = ['1040010029D36200','10400100280CF300']
+initials = "bps" #This is used to create the output S3 folder 
+location = "Mali/KonnaKoana" #This is used to create the output S3 folder 
+allIds = []
+for catID in inImages:
+    x = curTasks.createWorkflow(catID, curWKT, '', "bps/%s/%s" % (location, catID),
+                    runCarFinder = 0, runSpfeas = 0, downloadImages = 1,
+                    aopPan=True, aopAcomp=True, aopBands='Auto')
+    allIds.append(x.execute())
+    
+xx = gbdxUrl.monitorWorkflows(sleepTime=300, focalWorkflows=allIds)
+'''
 #Order imagery
 imagesID = ['102001003EC90B00','102001003EA4F400','102001000B8BF900']
 for id in imagesID:
