@@ -54,8 +54,8 @@ class GOSTTasks(object):
         if sensor in ['WV03','WV02']:
             irBand = 7
             redBand = 4
-            c_Green = 0
-        elif sensor in ['IKONOS-2']:
+            c_Green = 0 
+        elif sensor in ['IKONOS-2','GE01', 'QB02']:
             irBand = 3
             redBand = 2
             c_Green = 1            
@@ -97,7 +97,10 @@ class GOSTTasks(object):
             curImageBounds = [[[b[0], b[1]], [b[0], b[3]], [b[2], b[3]], [b[2], b[1]], [b[0], b[1]]]]
             inPoly = geojson.Polygon(curImageBounds)
             imgBounds = shape(inPoly)
-            img = img.aoi(wkt=str(imgBounds.intersection(curWKT)))            
+            if imgBounds.intersects(curWKT):
+                img = img.aoi(wkt=str(imgBounds.intersection(curWKT)))            
+            else:
+                raise ValueError("Provided KML does not intersect image bounds")
         if getOutSize: #If this flag is set, return the size of the total image instead
             return img.shape        
         #If the output image is going to be large, then write the output as tiled results
@@ -126,7 +129,13 @@ class GOSTTasks(object):
                             outImage = self.calculateNDSV(curChip, sensor, outputChip)
                         
         else:            
-            img.geotiff(path=outFile)
+            #img.geotiff(path=outFile)
+            if output == "IMAGE":
+                img.geotiff(path=outFile)
+            if output == "INDICES":
+                outImage = self.calculateIndices(img, sensor, outFile)
+            if output == 'NDSV': 
+                outImage = self.calculateNDSV(img, sensor, outFile)
         return 1
     
     def downloadAOP(self, cat_id, outFolder, boundingWKT, aopDra=True, panSharpen=True, acomp=True, aopBands='Auto'):
