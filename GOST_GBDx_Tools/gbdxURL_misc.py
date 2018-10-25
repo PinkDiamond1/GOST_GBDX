@@ -9,16 +9,19 @@ import subprocess
 
 
 def tPrint(s):
-    print"%s\t%s" % (time.strftime("%H:%M:%S"), s) 
+    print("%s\t%s" % (time.strftime("%H:%M:%S"), s) )
 
 class gbdxURL(object):
     def __init__(self, gbdx, wbgComp=False):
         #Get reference to gbdx username, password, in the gbdx config file
         gbdxConfigFile = os.path.join(os.path.expanduser('~'), ".gbdx-config")
+        config = configparser.RawConfigParser()  
+        ''' This part doesn't work in 3.6
         with open(gbdxConfigFile) as f:
             sample_config = f.read()
-        config = configparser.RawConfigParser(allow_no_values=True)  
         config.readfp(io.BytesIO(sample_config))
+        '''
+        config.read(gbdxConfigFile)
         self.username = config.get('gbdx','user_name')
         self.password = config.get('gbdx','user_password')
         self.client_id = gbdx.s3.info['S3_access_key']
@@ -43,6 +46,24 @@ class gbdxURL(object):
         resultsTasks = requests.get(url,headers=headers)
         return resultsTasks.json()['tasks']
         
+    def listAllTasks_Advanced(self, outFile):
+        allFunctions = {}
+        for x in self.listAllTasks():
+            name = x.split(":")[0]
+            val = int(x.split(":")[1].replace(".", ""))
+            try:
+                if allFunctions[name] > val:
+                    allFunctions[name] = val
+            except:
+                allFunctions[name] = val
+        with open(outFile, 'w') as outFile:
+            for key, value in allFunctions.iteritems():
+                curDesc = self.descTask(key)
+                try:
+                    outFile.write("%s,%s,%s\n" % (curDesc['name'], curDesc['version'], curDesc['description']))
+                except:
+                    print("%s did not search" % key)
+                    print(curDesc)
     def descTask(self, task):
         ''' describe the defined task
         '''
@@ -68,7 +89,7 @@ class gbdxURL(object):
         headers = {"Authorization": "Bearer " + self.access_token}
         resultsTasks = requests.get(url,headers=headers)
         return(resultsTasks.json()['Workflows'])
-        
+    
     def descWorkflow(self, wID):        
         url     = 'https://geobigdata.io/workflows/v1/workflows/%s' % wID
         headers = {"Authorization": "Bearer " + self.access_token}

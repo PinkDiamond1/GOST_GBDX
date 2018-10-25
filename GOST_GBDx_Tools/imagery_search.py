@@ -38,17 +38,19 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
     print filePrefix
     '''
     missingSceneList = os.path.join(outputFolder, "%s_missing_scene_list.csv" % filePrefix)
-    
+
     # Create bboxx - the square shaped box which will always contain the AOI.
     bboxx = []
     for coord in range(0,len(AOI.bounds)): 
         bboxx.append(AOI.bounds[coord])
+
     # Define search function. Returns up to 1000 images where cloud cover smaller than 25%
     def search_unordered(bbox, _type, count=10000, cloud_cover=1):
         aoi = AOI.wkt
         query = "item_type:{} AND item_type:DigitalGlobeAcquisition".format(_type)
         query += " AND attributes.cloudCover_int:<{}".format(cloud_cover)
         return gbdx.vectors.query(aoi, query, count=count)
+
     # Run search on Area of Interest (AOI). Passes in AOI in Well Known Text format (wkt)
     records = search_unordered(AOI.wkt, 'DigitalGlobeAcquisition')
     # Create list object of all catalog IDs returned in search
@@ -111,7 +113,7 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
     #Generate pandas dataframe from results
     out = pd.DataFrame(scenes,columns = cols)
     # Convert Timestamp field to pandas DateTime object
-    out['TS'] = out['TimeStamp'].apply(lambda x: pd.Timestamp(x))
+    out['TS'] = out['TimeStamp'].apply(lambda x: pd.Timestamp(x).tz_localize(None))
     # Add separate date and time columns for easy interpretation
     string = out['TimeStamp'].str.split('T')
     out['Date'] = string.str.get(0)
@@ -126,7 +128,7 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
                          (out['ImageBands'].isin(accepted_bands))
                         ]    
     # Apply ranking method over all non-disqualified search results for each field
-    optimal_date = pd.to_datetime(optimal_date, utc = True)
+    optimal_date = pd.to_datetime(optimal_date, utc = True).tz_localize(None)
 
     # each 1% of cloud cover = 1 point
     out_1stcut['points_CC'] = (out_1stcut['CloudCover'])  
