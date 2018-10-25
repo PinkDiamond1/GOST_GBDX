@@ -39,12 +39,10 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 #   CatalogImage: Creates reference to image on IDAHO that can then be written locally
 #
 #   Use tasks for larger imagery and CatalogImage for smaller samples
-'''
-'''
 inputShapes = r"D:\Mali\inputData\Ansongo_AOI.shp"
 inD = gpd.read_file(inputShapes)
 curWKT = inD.geometry[0]
-inImages = ['103001007A0A1100','105001000D50B500','103001007278F400','10300100677C8C00','10400100266D5700','103001006006AB00','103001003F48EC00']
+inImages = ['103001002F4EE100']#1030010006789E00']
 
 for catID in inImages:
     imgStatus = gbdx.ordering.order(catID)

@@ -47,9 +47,9 @@ inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage.kml"
 outFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\Jamaica\PortlandCottage\%s"
 inImages = ['103001000421D700']
 '''
-inKML = r"Q:\AFRICA\COD\Projects\NDSV_Urbanization\AOI_Kinshasa.kml"
-outFolder = r"Q:\AFRICA\COD\Projects\NDSV_Urbanization\AOI_Kinshasa\%s"
-inImages = ['103001007FA97400','1030010051656900','103001002F4EE100','1030010011D73D00','1030010006789E00','10100100047CCE00']
+inKML = r"D:\Kinshasa\NDSV\AOI_Kinshasa.kml"
+outFolder = r"D:\Kinshasa\NDSV\%s"
+inImages = ['103001002F4EE100']#1030010011D73D00']#
 curIndex = "NDSV" #"INDICES"
 
 #get WKT from KML
@@ -80,7 +80,7 @@ for catID in inImages:
         curStatus = gbdx.ordering.status(imgStatus)[0]['location']
     if curStatus != 'not_delivered':
         print "Processing %s" % catID
-        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output=curIndex)  
+        res = curTasks.downloadImage(catID, curFolder, curWKT=loads(curWKT), output=curIndex, specificTiles=[[3,6],[7,8]])
         print (res)
     else:
         print "Ordering %s " % catID

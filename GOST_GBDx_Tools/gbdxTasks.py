@@ -75,7 +75,8 @@ class GOSTTasks(object):
         newDataset.close()
            
     def downloadImage(self, cat_id, outFile, output="IMAGE", boundingBox=None, curWKT=None, 
-        imgChipSize = 1000, band_type = "MS", panSharpen=True, acomp=True, getOutSize=False):
+        imgChipSize = 1000, band_type = "MS", panSharpen=True, acomp=True, getOutSize=False, 
+        specificTiles=[[],[]]):
         ''' Uses the CatalogImage object to download and write data
             http://gbdxtools.readthedocs.io/en/latest/api_reference.html#catalogimage
             
@@ -83,9 +84,10 @@ class GOSTTasks(object):
         cat_id [string] - CatalogID for Digital Globe that is present in IDAHO
         outFile [string] - path to output image
         OPTIONAL INPUTS
-        output [string] [IMAGE, INDICES NDSV] - what kind of image to return. IMAGE is the raw imagery, 
+        output [string] [IMAGE, INDICES, NDSV] - what kind of image to return. IMAGE is the raw imagery, 
             INDICES returns a stacked NDVI, NDWI and NDSV return the Normalized Differece Spectral Vector
-        boundingBox []        
+        boundingBox []
+        specificImages [list of list of integers] - specific columns (first list) and rows (second list) to create
         '''
         img = CatalogImage(cat_id, pansharpen=panSharpen, band_type=band_type, acomp=acomp)
         sensor = img.ipe_metadata['image']['sensorPlatformName']
@@ -113,10 +115,16 @@ class GOSTTasks(object):
                 pass
             rowSteps = range(0,img.shape[1],imgChipSize)
             rowSteps.append(img.shape[1])
+            rowIndex = range(0, len(rowSteps) - 1, 1)
+            if len(specificTiles[1]) > 0:
+                rowIndex = specificTiles[1]
             colSteps = range(0,img.shape[2],imgChipSize)
             colSteps.append(img.shape[2])
-            for rIdx in range(0, len(rowSteps) - 1, 1):
-                for cIdx in range(0, len(colSteps) - 1, 1):
+            colIndex = range(0, len(colSteps) - 1, 1)
+            if len(specificTiles[0]) > 0:
+                colIndex = specificTiles[0]
+            for rIdx in rowIndex:
+                for cIdx in colIndex:
                     logging.info("Downloading row %s of %s and column %s of %s" % (rIdx, len(rowSteps), cIdx, len(colSteps)))
                     outputChip = os.path.join(outFolder, "C%s_R%s.tif" % (cIdx, rIdx))
                     curChip = img[0:img.shape[0], rowSteps[rIdx]:rowSteps[rIdx + 1], colSteps[cIdx]:colSteps[cIdx + 1]]

@@ -25,19 +25,19 @@ curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
 #Run spfeas on saved clippedRaster
-inS = gpd.read_file(r"Q:\AFRICA\COD\Projects\DRC_Census_Franck\Lubumbashi_WM\Lubumbashi_WM.shp")
+inS = gpd.read_file(r"D:\Kinshasa\Shohei_Poverty\AOI.shp")
 inS = inS.to_crs({'init': u'epsg:4326'})
 
-for catID in ["1040010031293100"]:#, "10400100315E4200"]:
+for catID in ['1030010080070D00','1030010080555B00','103001007FA97400','104001002B65CE00']:
     inS3Folder = r"s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/bps/cityAnalysis/Lubumbashi_WM/%s/clippedRaster" % catID
-    outFolder = "bps/cityAnalysis/Lubumbashi_WM/%s" % catID
+    outFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s" % catID
     sensor = "WORLDVIEW03_VNIR"
     x = curTasks.createWorkflow(catID, str(inS.geometry[0]), sensor, outFolder,
-                    runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, downloadImages = 0,
+                    runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, downloadImages = 1,
                     aopPan=False, aopDra=False, aopAcomp=False, aopBands='PAN',
                     spfeasParams={"triggers":'orb seg dmp fourier gabor grad hog lac mean pantex saliency sfs ndvi', 
-                        "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'5000', "n_jobs":'1'}, 
-                        inRaster = inS3Folder)
+                        "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'5000', "n_jobs":'-1'}, 
+                        inRaster = '')
     id1 = x.execute()
 
 #x.tasks[0].generate_task_workflow_json()
