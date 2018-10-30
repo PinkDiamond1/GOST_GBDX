@@ -77,6 +77,7 @@ class gbdxURL(object):
         headers = {"Authorization": "Bearer " + self.access_token}
         resultsTasks = requests.get(url,headers=headers)
         return resultsTasks.json()
+        
     def getS3Creds(self):
         url = "https://geobigdata.io/s3creds/v1/prefix"
         headers = {"Authorization": "Bearer " + self.access_token}
@@ -180,8 +181,7 @@ class gbdxURL(object):
         with open(commandFile, 'w') as outFile:
             for l in awsCommands:
                 outFile.write(l)
-                outFile.write("\r\n")
-                
+                outFile.write("\r\n")                
         subprocess.call([commandFile], shell=True) 
 
     def monitorWorkflows(self, sleepTime=60, focalWorkflows=[]):

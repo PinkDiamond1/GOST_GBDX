@@ -13,8 +13,10 @@ from shapely.geometry import shape
 class GOSTTasks(object):
     def __init__(self, gbdx):
         self.gbdx = gbdx        
-        self.sensorDict = {"WORLDVIEW01":"WorldView1", "WORLDVIEW02":"WorldView2", "GEOEYE01": "GeoEye1", "QUICKBIRD02":"Quickbird","WORLDVIEW03_VNIR":"WorldView3"}   
-    
+        self.sensorDict = {"WORLDVIEW01":"WorldView1", "WORLDVIEW02":"WorldView2", 
+                            "GEOEYE01": "GeoEye1", "QUICKBIRD02":"Quickbird",
+                            "WORLDVIEW03_VNIR":"WorldView3",
+                            "WV03":"WorldView3"}   
     def calculateNDSV(self, inD, sensor, outFile):
         '''The Normalized Difference Spectral Vector normalizes all bands in an image against each other
         REFERENCE: https://ieeexplore.ieee.org/document/6587128/
@@ -130,7 +132,15 @@ class GOSTTasks(object):
                     curChip = img[0:img.shape[0], rowSteps[rIdx]:rowSteps[rIdx + 1], colSteps[cIdx]:colSteps[cIdx + 1]]
                     if not os.path.exists(outputChip):
                         if output == "IMAGE":
-                            curChip.geotiff(path=outputChip)
+                            #curChip.geotiff(path=outputChip)
+                            out_meta = {"dtype":curChip.dtype,  "compress":'lzw', "driver": "GTiff",
+                                "count":curChip.shape[0],"height": curChip.shape[1], "width": curChip.shape[2],
+                                "transform": curChip.affine,
+                                #Affine(img.metadata['georef']['scaleX'], 0.0, img.metadata['georef']['translateX'],0.0, img.metadata['georef']['scaleY'], img.metadata['georef']['translateY']),
+                                "crs": curChip.proj
+                                }
+                            with rasterio.open(outputChip, "w", **out_meta) as dest:
+                                dest.write(curChip)
                         if output == "INDICES":
                             outImage = self.calculateIndices(curChip, sensor, outputChip)
                         if output == 'NDSV': 
@@ -255,6 +265,7 @@ class GOSTTasks(object):
                 #Run spfeas on the panchromatic band (no vegetation calculations)
                 spLoopTask = self.gbdx.Task("spfeas_loop:0.4.0", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
                    triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'])
+                spLoopTask.timeout = 36000
                 curTasks.append(spLoopTask)
             
             if runCarFinder == 1:

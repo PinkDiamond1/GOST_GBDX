@@ -8,6 +8,7 @@ import pandas as pd
 import geopandas as gpd
 
 from gbdxtools import Interface
+from gbdxtools import CatalogImage
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if cmd_folder not in sys.path:
@@ -25,20 +26,22 @@ curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
 #Run spfeas on saved clippedRaster
-inS = gpd.read_file(r"D:\Kinshasa\Shohei_Poverty\AOI.shp")
+inS = gpd.read_file(r"Z:\SPFEAS_Results\Kinshasa\Shohei_Poverty\AOI.shp")
 inS = inS.to_crs({'init': u'epsg:4326'})
 
-for catID in ['1030010080070D00','1030010080555B00','103001007FA97400','104001002B65CE00']:
+for catID in ['1030010080070D00','1030010080555B00','103001007FA97400']:#'104001002B65CE00']:#
     inS3Folder = r"s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/bps/cityAnalysis/Lubumbashi_WM/%s/clippedRaster" % catID
-    outFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s" % catID
     sensor = "WORLDVIEW03_VNIR"
-    x = curTasks.createWorkflow(catID, str(inS.geometry[0]), sensor, outFolder,
-                    runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, downloadImages = 1,
+    for cJob in ['saliency','seg','fourier','pantex']:#'orb','seg','dmp','fourier','gabor','lac','mean','pantex','saliency','sfs','ndvi']:
+        outFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s/spfeas/%s" % (catID, cJob)
+        imageFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s/%s" % (catID, "clippedRaster")
+        x = curTasks.createWorkflow(catID, str(inS.geometry[0]), sensor, outFolder,
+                    runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, downloadImages = 0,
                     aopPan=False, aopDra=False, aopAcomp=False, aopBands='PAN',
-                    spfeasParams={"triggers":'orb seg dmp fourier gabor grad hog lac mean pantex saliency sfs ndvi', 
-                        "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'5000', "n_jobs":'-1'}, 
+                    spfeasParams={"triggers":'%s' % cJob, 
+                        "scales":'8 16 32', "block":'8', "gdal_cache":'1024', "section_size":'5000', "n_jobs":'1'}, 
                         inRaster = '')
-    id1 = x.execute()
+        id1 = x.execute()
 
 #x.tasks[0].generate_task_workflow_json()
 
@@ -46,16 +49,13 @@ xx = gbdxUrl.monitorWorkflows(sleepTime=60)
 xx['FAILED'][id1]
 
 for k in xx['FAILED'].keys():
-    print xx['FAILED'][k]['tasks'][0]['note']
+    print(xx['FAILED'][k]['tasks'][0]['note'])
 
 
 for xIdx in xx['FAILED'][id1]['tasks'][0]['inputs']:
-    print "%s - %s" % (xIdx['name'], xIdx['value'])
+    print("%s - %s" % (xIdx['name'], xIdx['value']))
 
-id2 = '4934643809165411250'
-xx['FAILED'][id2]
 
-print xx
 '''
 #Order images
 inputImages = ['1030010066932800','103001005AD57300','10300100414D2E00','10504100104D5D00']

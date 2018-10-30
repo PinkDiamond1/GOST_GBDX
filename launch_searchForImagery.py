@@ -17,7 +17,7 @@ cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( ins
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-manualCurFolder = r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\GOST_GBDx"
+manualCurFolder = r"C:/Users/WB411133/OneDrive - WBG/AAA_BPS/Code/Code/Github/GOST_GBDx"
 sys.path.insert(0, manualCurFolder)
 
 from GOST_GBDx_Tools import gbdxTasks
@@ -26,14 +26,14 @@ from GOST_GBDx_Tools import imagery_search
 
 #In order for the interface to be properly authenticated, follow instructions here:
 #   http://gbdxtools.readthedocs.io/en/latest/user_guide.html
-#   For Ben, the .gbdx-config file belongs in C:\Users\WB411133 (CAUSE no one else will f%*$&ing tell you that)
+#   For Ben, the .gbdx-config file belongs in C:/Users/WB411133 (CAUSE no one else will f%*$&ing tell you that)
 #   You can find the folder by opening Python and entering os.path.expanduser('~')
 gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
 ### Search for imagery within defined shapefile
-inShape = r"Q:/WORKINGPROJECTS/ImageryDownload/Mali_Keith/Konna_Koanna_1kmBuffer.shp"
+inShape = r"Q:/WORKINGPROJECTS/ImageryDownload/Mali_Keith/Bamako_AOI.shp"
 inD = gpd.read_file(inShape)
 if not inD.crs == {'init': u'epsg:4326'}:
     inD = inD.to_crs({'init': 'epsg:4326'})
@@ -41,7 +41,7 @@ cnt = 0
 allRes = []
 nrows = inD.shape[0]
 '''
-inKML = r"Q:\WORKINGPROJECTS\ImageryDownload\Mali_Keith\Konna-Koana.kml"
+inKML = r"Q:/WORKINGPROJECTS/ImageryDownload/Mali_Keith/Konna-Koana.kml"
 #get WKT from KML
 ds = ogr.Open(inKML)
 for lyr in ds: 
@@ -52,8 +52,8 @@ geom.CloseRings()
 curWKT = geom.ExportToIsoWkt()
 '''
 
-curRes = imagery_search.searchForImages(gbdx, inD.geometry.unary_union, os.path.dirname(inKML), 
-                    str(cnt), cutoff_date='1-Jan-12', optimal_date='01-Sep-18')
+curRes = imagery_search.searchForImages(gbdx, inD.geometry.unary_union, os.path.dirname(inShape), 
+                    str(cnt), cutoff_date='1-Jan-12', optimal_date='26-Oct-18')
 
 curRes.to_csv(inShape.replace(".shp", "_imagerySearch.csv"))
 
@@ -72,8 +72,8 @@ curRes.to_csv("C:/Temp/Balikpapan.csv")
 
 
 ### Search for imagery within defined shapefile
-inShape = r"Q:\WORKINGPROJECTS\DRC_Road_To_Konna\Konna-Koana_1km.shp"
-sceneFolder = r"Q:\WORKINGPROJECTS\DRC_Road_To_Konna"
+inShape = r"Q:/WORKINGPROJECTS/DRC_Road_To_Konna/Konna-Koana_1km.shp"
+sceneFolder = r"Q:/WORKINGPROJECTS/DRC_Road_To_Konna"
 outFolder = os.path.dirname(inShape)
 inD = gpd.read_file(inShape)
 if not inD.crs == {'init': u'epsg:4326'}:
@@ -115,8 +115,8 @@ curRes = imagery_search.searchForImages(gbdx, curWKT, "C:/Temp", "Balikpanana", 
 curRes.to_csv("C:/Temp/Balikpapan.csv")
                
 ### Search for imagery within defined shapefile
-inShape = r"Q:\WORKINGPROJECTS\Mexico_Poverty\agebs\urban_agebs_Buffer_200m_Diss.shp"
-sceneFolder = r"Q:\WORKINGPROJECTS\ImageryDownload\HCMC Admin Unit UTM WGS84"
+inShape = r"Q:/WORKINGPROJECTS/Mexico_Poverty/agebs/urban_agebs_Buffer_200m_Diss.shp"
+sceneFolder = r"Q:/WORKINGPROJECTS/ImageryDownload/HCMC Admin Unit UTM WGS84"
 outFolder = os.path.dirname(inShape)
 inD = gpd.read_file(inShape)
 if not inD.crs == {'init': u'epsg:4326'}:
@@ -145,5 +145,5 @@ for shp in inD.iterrows():
     cnt = cnt + 1
 
 finalRes.to_csv(inShape.replace(".shp", "_imagerySearch.csv"))
-
 '''
+FUBAR="FINE"
