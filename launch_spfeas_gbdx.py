@@ -32,10 +32,15 @@ inS = inS.to_crs({'init': u'epsg:4326'})
 for catID in ['1030010080070D00','1030010080555B00','103001007FA97400']:#'104001002B65CE00']:#
     inS3Folder = r"s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/bps/cityAnalysis/Lubumbashi_WM/%s/clippedRaster" % catID
     sensor = "WORLDVIEW03_VNIR"
-    for cJob in ['saliency','seg','fourier','pantex']:#'orb','seg','dmp','fourier','gabor','lac','mean','pantex','saliency','sfs','ndvi']:
+    #Get the intersecting area with the current image
+    cImg = CatalogImage(catID)
+    b = cImg.bounds
+    bGeom = box(b[0], b[1], b[2], b[3])
+    inGeom = bGeom.intersection(inS.geometry[0])   
+    for cJob in ['saliency','seg','fourier','pantex']:          #'orb','seg','dmp','fourier','gabor','lac','mean','pantex','saliency','sfs','ndvi']:
         outFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s/spfeas/%s" % (catID, cJob)
         imageFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s/%s" % (catID, "clippedRaster")
-        x = curTasks.createWorkflow(catID, str(inS.geometry[0]), sensor, outFolder,
+        x = curTasks.createWorkflow(catID, str(inGeom.wkt), sensor, outFolder,
                     runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, downloadImages = 0,
                     aopPan=False, aopDra=False, aopAcomp=False, aopBands='PAN',
                     spfeasParams={"triggers":'%s' % cJob, 

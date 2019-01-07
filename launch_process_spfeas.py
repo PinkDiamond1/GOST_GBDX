@@ -3,30 +3,25 @@
 # Benjamin P. Stewart
 ################################################################################
 
-import sys, os, inspect
+import sys, os, inspect, logging
+
+logging.basicConfig(level=logging.INFO)
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
+
 from GOST_GBDx_Tools import spfeas_results
 
-inFolder = r"D:\DRC_Census\GOMA\spfeas"
-outFolder = inFolder
-inShp = r"D:\DRC_Census\GOMA\Goma_WM\Goma_WM_GRID.shp"
-with open(os.path.join(outFolder, "missedTriggers.csv"), 'w') as missedTriggersFile:
-    for f in os.listdir(inFolder):
-        print f
-        try:
-            curSpfeas = spfeas_results.processSpfeas(os.path.join(inFolder, f))
-            outZonal = os.path.join(outFolder, "%s_zonal.csv" % f)
-            if not os.path.exists(outZonal):
-                curSpfeas.generateVRT()#gdalCommand=r"C:\WBG\GDAL\bin\gdalbuildvrt.exe")
-                curSpfeas.zonalVRT(inShp, outZonal)
-            try:
-                missedTriggers = curSpfeas.missedTriggers
-            except:
-                curSpfeas.getResultsYAML()
-                missedTriggers = curSpfeas.missedTriggers
-            missedTriggersFile.write('%s,%s\n' % (f, ','.join(missedTriggers)))
-        except:
-            print "Error processing %s" % f
+for catID in ['10500100133D8500']: #'10400100361EC300','1040010036B51000'
+    spfeasFolder  = r"D:\Addis\spfeas\%s" % catID
+    curSpfeas = spfeas_results.processLoopedSpfeas(spfeasFolder)
+    curSpfeas.combineLoopedResults()
+    xx = curSpfeas.attachRGB_NDSV_Bands(catID)
+    for x in xx:
+        os.remove(x)
+    curSpfeas.buildVRT()  
+    #curSpfeas.zonalVRT(r"D:\Kinshasa\Shohei_Poverty\ADMIN\bati_ilot_quartier.shp", outZonal)
+    #curSpfeas.generateImageWKT(curSpfeas.outVRT.replace(".vrt", ".csv"))
+    #curSpfeas.createPointSamples(r"D:\Kinshasa\Shohei_Poverty\trainingData.shp", gridSize=5)
+    #curSpfeas.createSpfeasCommands(outFile="%s_classifyCommands.txt" % spfeasFolder, samplesFile="training_sites_points__10400100361EC300_stackedRGBNDSV_SAMPLES.txt")

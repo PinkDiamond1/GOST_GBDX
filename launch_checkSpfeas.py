@@ -92,55 +92,55 @@ def processCSV(inD, initials, location, outputBase):
             gbdxUrl.executeAWS_file(xx, "C:/temp/s3Execution.bat")                    
     
 if __name__ == "__main__":
-gbdx = Interface()
-curTasks = gbdxTasks.GOSTTasks(gbdx)
-gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=False)
+    gbdx = Interface()
+    curTasks = gbdxTasks.GOSTTasks(gbdx)
+    gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=False)
 
-initials = 'bps'
-location = r's3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/cityAnalysis/Kinshasa/Shohei_Poverty/'
-outputFolder = r"C:/temp/Kinshasa/"
-spFile = os.path.join(outputFolder, "s3Contents_all.txt")
-logging.basicConfig(level=logging.INFO)
+    initials = 'bps'
+    location = r's3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/cityAnalysis/Kinshasa/Shohei_Poverty/'
+    outputFolder = r"C:/temp/Kinshasa/"
+    spFile = os.path.join(outputFolder, "s3Contents_all.txt")
+    logging.basicConfig(level=logging.INFO)
 
-# New version
-if not os.path.exists(spFile):
-    xx = gbdxUrl.listS3Contents(location, outFile=spFile, recursive=True)    
-    gbdxUrl.executeAWS_file(xx, "C:/temp/s3Contents.bat")
-    
-#Open the outputFile and find all the yaml files
-allYaml = []
-with open(spFile, 'r') as inFile:
-    for line in inFile:
-        splitFolder = line.split(" ")
-        cFile = splitFolder[-1].replace("\n", "")
-        if cFile[-4:] == 'yaml':
-            allYaml.append(cFile)
+    # New version
+    if not os.path.exists(spFile):
+        xx = gbdxUrl.listS3Contents(location, outFile=spFile, recursive=True)    
+        gbdxUrl.executeAWS_file(xx, "C:/temp/s3Contents.bat")
+        
+    #Open the outputFile and find all the yaml files
+    allYaml = []
+    with open(spFile, 'r') as inFile:
+        for line in inFile:
+            splitFolder = line.split(" ")
+            cFile = splitFolder[-1].replace("\n", "")
+            if cFile[-4:] == 'yaml':
+                allYaml.append(cFile)
 
-#Download the yaml files
-for cYaml in allYaml:
-    outYaml = os.path.join(outputFolder, os.path.basename(cYaml))
-    cYaml = os.path.join("s3://gbd-customer-data/", cYaml)
-    #if not os.path.exists(outYaml):
-    xx = gbdxUrl.downloadS3Contents(cYaml, outYaml, recursive=False)
-    gbdxUrl.executeAWS_file(xx, "C:/temp/s3Execution.bat")    
-
-#Process the yaml files
-curData = {}
-for cYaml in allYaml:
-    nameSplit = cYaml.split("/")
-    if not len(nameSplit[-3]) > 8:
+    #Download the yaml files
+    for cYaml in allYaml:
         outYaml = os.path.join(outputFolder, os.path.basename(cYaml))
-        try:
-            with open(outYaml, 'r') as yamlContents:
-                yamlRes = yaml.load(yamlContents)
-            #curData.append([nameSplit[-5], nameSplit[-3], yamlRes['ALL_FINISHED']])
-            curRes = {nameSplit[-3]:yamlRes['ALL_FINISHED']}
+        cYaml = os.path.join("s3://gbd-customer-data/", cYaml)
+        #if not os.path.exists(outYaml):
+        xx = gbdxUrl.downloadS3Contents(cYaml, outYaml, recursive=False)
+        gbdxUrl.executeAWS_file(xx, "C:/temp/s3Execution.bat")    
+
+    #Process the yaml files
+    curData = {}
+    for cYaml in allYaml:
+        nameSplit = cYaml.split("/")
+        if not len(nameSplit[-3]) > 8:
+            outYaml = os.path.join(outputFolder, os.path.basename(cYaml))
             try:
-                curData[nameSplit[-5]] = {**curData[nameSplit[-5]], **curRes}
+                with open(outYaml, 'r') as yamlContents:
+                    yamlRes = yaml.load(yamlContents)
+                #curData.append([nameSplit[-5], nameSplit[-3], yamlRes['ALL_FINISHED']])
+                curRes = {nameSplit[-3]:yamlRes['ALL_FINISHED']}
+                try:
+                    curData[nameSplit[-5]] = {**curData[nameSplit[-5]], **curRes}
+                except:
+                    curData[nameSplit[-5]] = curRes
             except:
-                curData[nameSplit[-5]] = curRes
-        except:
-            print("Could not process %s" % cYaml)
+                print("Could not process %s" % cYaml)
 
 finalPD = pd.DataFrame(curData)#, columns=["CAT_ID", "spfeas", "Finished"])
 finalPD.to_csv("C:/temp/spfeasCheck.csv")    

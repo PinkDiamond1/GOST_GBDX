@@ -92,7 +92,7 @@ class GOSTTasks(object):
         specificImages [list of list of integers] - specific columns (first list) and rows (second list) to create
         '''
         img = CatalogImage(cat_id, pansharpen=panSharpen, band_type=band_type, acomp=acomp)
-        sensor = img.ipe_metadata['image']['sensorPlatformName']
+        sensor = img.metadata['image']['sensorPlatformName']
         if boundingBox:
             img = img.aoi(bbox=boundingBox)
         if curWKT:

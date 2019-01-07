@@ -1,0 +1,49 @@
+####################
+# Run mpglue
+####################
+#Run docker and activate
+docker run -it -v D:\Kinshasa\Shohei_Poverty\:/mnt/data geographyis/spfeas
+source activate spfeasenv
+cd /mnt/data
+
+sample-raster -s /mnt/data/trainingData.shp -i /mnt/data/spfeas/103001007FA97400_stackedRGBNDSV.vrt -o /mnt/data/spfeas/103001007FA97400_sampleData -j 1
+
+classify -s spfeas/103001007FA97400_sampleData/trainingData_points__103001007FA97400_stackedRGBNDSV_SAMPLES.txt --output-model spfeas/103001007FA97400_sampleData/RF_Model.txt --classifier-info "{'classifier':'RF'}"
+
+classify -i spfeas/103001007FA97400_stackedRGBNDSV.vrt -o spfeas/103001007FA97400_stackedRGBNDSV_classified.tif --input-model spfeas/103001007FA97400_sampleData/RF_Model.txt -s spfeas/103001007FA97400_sampleData/trainingData_points__103001007FA97400_stackedRGBNDSV_SAMPLES.txt
+
+classify -i spfeas/103001007FA97400_stackedRGB/058558367010_01_assembly_clip__BD1_BK8_SC8-16-32__ST1-006__TL000003.tif -o spfeas/058558367010_01_assembly_clip__BD1_BK8_SC8-16-32__ST1-006__TL000003_classified.tif --input-model spfeas/103001007FA97400_sampleData/RF_Model.txt -s spfeas/103001007FA97400_sampleData/trainingData_points__103001007FA97400_stackedRGBNDSV_SAMPLES.txt
+
+import os
+inFolder = r"D:\Kinshasa\Shohei_Poverty\spfeas\103001007FA97400_stackedRGB"
+outFolder = "103001007FA97400_classified"
+images = os.listdir(inFolder)
+with open("%s_classify_images_commands.txt" % inFolder, 'w') as out:
+    for i in images:
+        out.write("classify -i spfeas/103001007FA97400_stackedRGB/%s -o spfeas/%s --input-model spfeas/103001007FA97400_sampleData/RF_Model.txt -s spfeas/103001007FA97400_sampleData/trainingData_points__103001007FA97400_stackedRGBNDSV_SAMPLES.txt\n" % (i,i))
+
+
+classify -i spfeas/103001007FA97400_stackedRGBNDSV.vrt -o spfeas/103001007FA97400_stackedRGBNDSV_classified.tif -s spfeas/103001007FA97400_sampleData/trainingData_points__103001007FA97400_stackedRGBNDSV_SAMPLES.txt --classifier-info "{'classifier': 'RF'}"
+
+### Needed to replace the trainingData_points.shp prj file
+### Need to rebuild the vrt in the linux environment, or manually replace slashes
+classify -i /mnt/data/spfeas/103001007FA97400_stackedRGBNDSV.vrt -o /mnt/data/spfeas/103001007FA97400_classified.tif -s /mnt/data/spfeas/103001007FA97400_sampleData/samples.txt --output_model /mnt/data/spfeas/103001007FA97400_sampleData/RF_model.txt --classifier-info "{'classifier': 'RF','trees':1000}" --row-block 1024 --col-block 1024 --v-jobs -1
+
+
+#sample-raster -s /mnt/data/trainingData.shp -i /mnt/data/spfeas/103001007FA97400_stackedRGBNDSV.vrt -o /mnt/data/spfeas/103001007FA97400_sampleData
+
+import geopandas as gpd
+import pandas as pd
+import rasterio
+
+inD = gpd.read_file(r"D:\Kinshasa\Shohei_Poverty\trainingData_points.shp")
+inR = rasterio.open(r"D:\Kinshasa\Shohei_Poverty\spfeas\103001007FA97400_stackedRGBNDSV.vrt")
+
+curXY = zip(inD['geometry'].x, inD['geometry'].y)
+xx = inR.sample(curXY)
+allVals = []
+for x in xx:
+    allVals.append(x)
+sampledRes = gpd.DataFrame(allVals)
+
+

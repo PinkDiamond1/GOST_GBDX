@@ -24,8 +24,49 @@ gbdx = Interface()
 curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=False)
 
-#Get list of scenes for follow-up
+
+#Download looped results
+outputFolder = r"D:\Addis\spfeas"
+s3Path = 'bps/cityAnalysis/Addis'
+s3File = "C:/Temp/s3Contents.txt"
+xx = gbdxUrl.listS3Contents("s3://gbd-customer-data/%s/%s/" % (gbdxUrl.prefix, s3Path), outFile=s3File)
+gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
+with open(s3File) as inFile:
+    for f in inFile:
+        splitFolder = f.split(" ")
+        imageName = splitFolder[-1].replace("\n", "")
+        #if imageName.replace("/", "") in toDownload:
+        try:
+            #Each line in this folder represents a processed image
+            curFolder = "s3://gbd-customer-data/%s/%s/%s" % (gbdxUrl.prefix, s3Path, imageName)
+            imageFolder = "%s%s/" % (curFolder, "clippedRaster")
+            print(imageFolder)
+            resultsFolder = "%s%s/" % (curFolder, "spfeas")
+            #Download spfeas Results
+            curOut = os.path.join(outputFolder, imageName)
+            try:
+                os.mkdir(curOut)
+                xx = gbdxUrl.downloadS3Contents(resultsFolder, curOut, recursive=True)
+                gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
+            except:
+                print "%s already exists" % curOut
+        except:
+            print "Error processing %s" % f
+
 '''
+images = ['103001007FA97400','1030010080070D00','1030010080555B00','104001002B65CE00']
+triggers = ['dmp','gabor','grad','hog','lac','mean','orb','sfs'] #'ndvi','saliency','seg',
+for img in images:
+    for tr in triggers:
+        curFolder = "s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/%s/%s/spfeas/%s/spfeas/" % (s3Path,img,tr)
+        curOut = "%s/%s/%s" % (outputFolder, img, tr)
+        if not os.path.exists(curOut):
+            os.makedirs(curOut)
+        xx = gbdxUrl.downloadS3Contents(curFolder, curOut, recursive=True)
+        gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
+
+
+#Get list of scenes for follow-up
 scenesList = r"H:\MEX_Pov\IMAGE_CSV\followUp_scenes.txt"
 scenes = []
 with open(scenesList, 'r') as sceneR:
@@ -40,9 +81,9 @@ for spFolder in os.listdir(r"H:\MEX_Pov\SpfeasRes"):
 xx = gbdxUrl.monitorWorkflows()
 for x in xx['SUCCEEDED']:
     print x['tasks'][0]['outputs'][0]['persistLocation']
-'''
 toDownload = ['10300100651A0500','1040010037B76500','10400100387BFA00']
-
+'''
+'''
 initials = 'bps'
 location = r'Mali/Ansongo'
 #imageryFiles = r"H:\SriLanka\IMAGE_CSV\Final_Scene_List_LKA.csv"
@@ -50,7 +91,7 @@ location = r'Mali/Ansongo'
 outputFolder = r"D:\%s\%s" % (initials, location)
 if not os.path.exists(outputFolder):
     os.makedirs(outputFolder)
-s3File = "C:/Temp/s3Contents.txt"
+
 
 alreadyProcessed = os.listdir(outputFolder)
 print alreadyProcessed
@@ -58,24 +99,4 @@ xx = gbdxUrl.listS3Contents("s3://gbd-customer-data/%s/%s/%s/" % (gbdxUrl.prefix
 gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
 
 processedScenes = []
-with open(s3File) as inFile:
-    for f in inFile:
-        splitFolder = f.split(" ")
-        imageName = splitFolder[-1].replace("\n", "")
-        #if imageName.replace("/", "") in toDownload:
-        try:
-            #Each line in this folder represents a processed image
-            processedScenes.append(imageName.replace("/", ""))
-            curFolder = "s3://gbd-customer-data/%s/%s/%s/%s" % (gbdxUrl.prefix, initials, location, imageName)
-            imageFolder = "%s%s/" % (curFolder, "clippedRaster")
-            resultsFolder = "%s%s/" % (curFolder, "spfeas")
-            #Download spfeas Results
-            curOut = os.path.join(outputFolder, imageName)
-            try:
-                os.mkdir(curOut)
-                xx = gbdxUrl.downloadS3Contents(imageFolder, curOut, recursive=True)
-                gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
-            except:
-                print "%s already exists" % curOut
-        except:
-            print "Error processing %s" % f
+'''
