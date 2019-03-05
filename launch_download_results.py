@@ -26,8 +26,9 @@ gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=False)
 
 
 #Download looped results
+toDownload = ['104001003620B600','104001003620F800','1040010036917C00','1040010036B51000','104001003791DB00']
 outputFolder = r"D:\Addis\spfeas"
-s3Path = 'bps/cityAnalysis/Addis'
+s3Path = 'bps/Shohei/Addis'
 s3File = "C:/Temp/s3Contents.txt"
 xx = gbdxUrl.listS3Contents("s3://gbd-customer-data/%s/%s/" % (gbdxUrl.prefix, s3Path), outFile=s3File)
 gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
@@ -35,23 +36,23 @@ with open(s3File) as inFile:
     for f in inFile:
         splitFolder = f.split(" ")
         imageName = splitFolder[-1].replace("\n", "")
-        #if imageName.replace("/", "") in toDownload:
-        try:
-            #Each line in this folder represents a processed image
-            curFolder = "s3://gbd-customer-data/%s/%s/%s" % (gbdxUrl.prefix, s3Path, imageName)
-            imageFolder = "%s%s/" % (curFolder, "clippedRaster")
-            print(imageFolder)
-            resultsFolder = "%s%s/" % (curFolder, "spfeas")
-            #Download spfeas Results
-            curOut = os.path.join(outputFolder, imageName)
+        if imageName.replace("/", "") in toDownload:
             try:
-                os.mkdir(curOut)
-                xx = gbdxUrl.downloadS3Contents(resultsFolder, curOut, recursive=True)
-                gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
+                #Each line in this folder represents a processed image
+                curFolder = "s3://gbd-customer-data/%s/%s/%s" % (gbdxUrl.prefix, s3Path, imageName)
+                imageFolder = "%s%s/" % (curFolder, "clippedRaster")
+                print(imageFolder)
+                resultsFolder = "%s%s/" % (curFolder, "spfeas")
+                #Download spfeas Results
+                curOut = os.path.join(outputFolder, imageName)
+                try:
+                    os.mkdir(curOut)
+                    xx = gbdxUrl.downloadS3Contents(resultsFolder, curOut, recursive=True)
+                    gbdxUrl.executeAWS_file(xx, "C:/Temp/s3Execution.bat")
+                except:
+                    print("%s already exists" % curOut)
             except:
-                print "%s already exists" % curOut
-        except:
-            print "Error processing %s" % f
+                print("Error processing %s" % f)
 
 '''
 images = ['103001007FA97400','1030010080070D00','1030010080555B00','104001002B65CE00']

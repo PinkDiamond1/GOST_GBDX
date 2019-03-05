@@ -15,6 +15,7 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
 sys.path.insert(0, r"C:\Users\WB411133\OneDrive - WBG\AAA_BPS\Code\Code\Github\GOST_GBDx")
+sys.path.insert(0, r"C:\Code\Github\GOST_GBDX")
 from GOST_GBDx_Tools import gbdxTasks
 from GOST_GBDx_Tools import gbdxURL_misc
 
@@ -26,18 +27,26 @@ curTasks = gbdxTasks.GOSTTasks(gbdx)
 gbdxUrl = gbdxURL_misc.gbdxURL(gbdx)
 
 #Run spfeas on saved clippedRaster
-inS = gpd.read_file(r"Z:\SPFEAS_Results\Kinshasa\Shohei_Poverty\AOI.shp")
+inS = gpd.read_file(r"D:\Addis\ADDIS.shp")
 inS = inS.to_crs({'init': u'epsg:4326'})
 
-for catID in ['1030010080070D00','1030010080555B00','103001007FA97400']:#'104001002B65CE00']:#
+#for catID in ['1030010080070D00','1030010080555B00','103001007FA97400']:#'104001002B65CE00']:#
+for imgInfo in [
+    ['1040010036917C00', ['dmp', 'seg']],
+    ['1040010036B51000', ['dmp', 'seg']],
+    ['104001003620B600', ['dmp']],
+    ['104001003620F800', ['dmp', 'seg', 'pantex']]]:
+    catID = imgInfo[0]
+    curJobs = imgInfo[1]
     inS3Folder = r"s3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/bps/cityAnalysis/Lubumbashi_WM/%s/clippedRaster" % catID
+    curJobs = ['saliency','seg','fourier','pantex','orb','seg','dmp','fourier','gabor','lac','mean','pantex','saliency','sfs','ndvi']
     sensor = "WORLDVIEW03_VNIR"
     #Get the intersecting area with the current image
     cImg = CatalogImage(catID)
     b = cImg.bounds
     bGeom = box(b[0], b[1], b[2], b[3])
     inGeom = bGeom.intersection(inS.geometry[0])   
-    for cJob in ['saliency','seg','fourier','pantex']:          #'orb','seg','dmp','fourier','gabor','lac','mean','pantex','saliency','sfs','ndvi']:
+    for cJob in curJobs:
         outFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s/spfeas/%s" % (catID, cJob)
         imageFolder = "bps/cityAnalysis/Kinshasa/Shohei_Poverty/%s/%s" % (catID, "clippedRaster")
         x = curTasks.createWorkflow(catID, str(inGeom.wkt), sensor, outFolder,

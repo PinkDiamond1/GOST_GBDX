@@ -101,9 +101,12 @@ class processLoopedSpfeas(object):
         allTiles = []
         for f in inFiles:
             curTile = os.path.join(inFolder, f)
-            curR = rasterio.open(curTile)
-            b = curR.bounds
-            allTiles.append([f, box(b.left,b.bottom,b.right,b.top)])
+            try:
+                curR = rasterio.open(curTile)
+                b = curR.bounds
+                allTiles.append([f, box(b.left,b.bottom,b.right,b.top)])
+            except:
+                logging.warning("Could not process %s" % curTile)
 
         res = pd.DataFrame(allTiles, columns=["FileName","geometry"])
         geoRes = gpd.GeoDataFrame(res, geometry=res.geometry)

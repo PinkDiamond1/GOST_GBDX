@@ -97,8 +97,8 @@ if __name__ == "__main__":
     gbdxUrl = gbdxURL_misc.gbdxURL(gbdx, wbgComp=False)
 
     initials = 'bps'
-    location = r's3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/cityAnalysis/Kinshasa/Shohei_Poverty/'
-    outputFolder = r"C:/temp/Kinshasa/"
+    location = r's3://gbd-customer-data/1c080e9c-02cc-4e2e-a8a2-bf05b8369eee/bps/Shohei/Addis/'
+    outputFolder = r"C:/temp/Addis/"
     spFile = os.path.join(outputFolder, "s3Contents_all.txt")
     logging.basicConfig(level=logging.INFO)
 
@@ -142,8 +142,8 @@ if __name__ == "__main__":
             except:
                 print("Could not process %s" % cYaml)
 
-finalPD = pd.DataFrame(curData)#, columns=["CAT_ID", "spfeas", "Finished"])
-finalPD.to_csv("C:/temp/spfeasCheck.csv")    
+    finalPD = pd.DataFrame(curData)#, columns=["CAT_ID", "spfeas", "Finished"])
+    finalPD.to_csv(os.path.join(outputFolder, "allSpfeasStatus.txt"))    
         
     '''
     # old version for straightforward spfeas monitoring
