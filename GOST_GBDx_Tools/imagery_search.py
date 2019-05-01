@@ -49,8 +49,8 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
         aoi = AOI.wkt
         query = "item_type:{} AND item_type:DigitalGlobeAcquisition".format(_type)
         query += " AND attributes.cloudCover_int:<{}".format(cloud_cover)
-        print('print query')
-        print(query)
+        #print('print query')
+        #print(query)
         return gbdx.vectors.query(aoi, query, count=count)
 
     # Run search on Area of Interest (AOI). Passes in AOI in Well Known Text format (wkt)
@@ -58,10 +58,8 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
     # Create list object of all catalog IDs returned in search
     ids = [r['properties']['attributes']['catalogID'] for r in records]
 
-    #print ids
-    #only_ids= [r['catalogID'] for r in records]
-    print('print records')
-    print(records)
+    #print('print records')
+    #print(records)
 
     # Define Counters
     l = 0    # number of non-IDAHO images
