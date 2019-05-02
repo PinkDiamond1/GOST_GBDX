@@ -16,7 +16,8 @@ class GOSTTasks(object):
         self.sensorDict = {"WORLDVIEW01":"WorldView1", "WORLDVIEW02":"WorldView2", 
                             "GEOEYE01": "GeoEye1", "QUICKBIRD02":"Quickbird",
                             "WORLDVIEW03_VNIR":"WorldView3",
-                            "WV03":"WorldView3"}   
+                            "WV03":"WorldView3",
+                            "SENTINEL1":"gray"}   
     def calculateNDSV(self, inD, sensor, outFile):
         '''The Normalized Difference Spectral Vector normalizes all bands in an image against each other
         REFERENCE: https://ieeexplore.ieee.org/document/6587128/
@@ -232,10 +233,19 @@ class GOSTTasks(object):
         LULC: https://gbdxdocs.digitalglobe.com/docs/automated-land-cover-classification-1
         '''
         curTasks = []        
-        data = self.gbdx.catalog.get_data_location(catalog_id)        
-        aopParts = self.getImageParts(catalog_id, inputWKT)
-        if len(aopParts) > 0:
-            if inRaster == "": #Run AOP and raster clip if input raster is not defined
+        data = self.gbdx.catalog.get_data_location(catalog_id)    
+        if inRaster == 'SENTINEL1':
+            #For sentinel1 imagery, no need to run APO
+            sWkt = shapely.wkt.loads(inputWKT)
+            sbbox = sWkt.bounds
+            bbox = '%s,%s,%s,%s' % (sbbox[0], sbbox[3], sbbox[2], sbbox[1])
+            raster_clip = self.gbdx.Task("RasterClip_Extents", raster=data, chip_ul_lr = bbox)
+            curTasks.append(raster_clip)
+            clippedRaster = raster_clip.outputs.data
+        elif inRaster == "": 
+            #Run AOP and raster clip if input raster is not defined
+            aopParts = self.getImageParts(catalog_id, inputWKT)
+            if len(aopParts) > 0:
                 aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts, 
                                     enable_pansharpen=aopPan, enable_dra=aopDra, 
                                     enable_acomp=aopAcomp, bands=aopBands)
@@ -249,52 +259,57 @@ class GOSTTasks(object):
                 bbox = '%s,%s,%s,%s' % (sbbox[0], sbbox[3], sbbox[2], sbbox[1])
                 raster_clip = self.gbdx.Task("RasterClip_Extents", raster=raster, chip_ul_lr = bbox)
                 curTasks.append(raster_clip)
-
                 clippedRaster = raster_clip.outputs.data
             else:
-                clippedRaster = inRaster
-            if runSpfeas == 1:
-                #Run spfeas on the panchromatic band (no vegetation calculations)
-                spTask = self.gbdx.Task("spfeas:0.4.3", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
-                   triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'],
-                   gdal_cache=spfeasParams['gdal_cache'], section_size=spfeasParams['section_size'],
-                   n_jobs=spfeasParams['n_jobs'])
-                curTasks.append(spTask)
+                raise(ValueError("No intersecting image parts"))
+        else:
+            #If raster location is provided, define it here
+            clippedRaster = inRaster
+        if runSpfeas == 1:
+            cSensor = self.sensorDict[sensor]
+            useRGB = True
+            if cSensor == 'gray':
+                useRGB = False
+                cSensor = 'Quickbird'
             
-            if spfeasLoop == 1:
-                #Run spfeas on the panchromatic band (no vegetation calculations)
-                spLoopTask = self.gbdx.Task("spfeas_loop:0.4.0", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
-                   triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'])
-                spLoopTask.timeout = 36000
-                curTasks.append(spLoopTask)
+            #Run spfeas on the panchromatic band (no vegetation calculations)
+            spTask = self.gbdx.Task("spfeas:0.4.3", data_in=clippedRaster, sensor=cSensor, 
+               triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'],
+               gdal_cache=spfeasParams['gdal_cache'], section_size=spfeasParams['section_size'],
+               n_jobs=spfeasParams['n_jobs'], use_rgb=useRGB)
+            curTasks.append(spTask)
+        
+        if spfeasLoop == 1:
+            #Run spfeas on the panchromatic band (no vegetation calculations)
+            spLoopTask = self.gbdx.Task("spfeas_loop:0.4.0", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
+               triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'])
+            spLoopTask.timeout = 36000
+            curTasks.append(spLoopTask)
+        
+        if runCarFinder == 1:
+            #Run carfinder task on clipped image            
+            car_finder_task = self.gbdx.Task("deepcore-singleshot", data=clippedRaster)                
+            curTasks.append(car_finder_task)
+        if runLC == 1:
+            lcTask = self.gbdx.Task('lulc', image=clippedRaster)
+            curTasks.append(lcTask)
             
-            if runCarFinder == 1:
-                #Run carfinder task on clipped image            
-                car_finder_task = self.gbdx.Task("deepcore-singleshot", data=clippedRaster)                
-                curTasks.append(car_finder_task)
-            if runLC == 1:
-                lcTask = self.gbdx.Task('lulc', image=clippedRaster)
-                curTasks.append(lcTask)
-                
-            #Define the tasks in your workflow
-            workflow = self.gbdx.Workflow(curTasks)
-            workflow.timeout = 36000
+        #Define the tasks in your workflow
+        workflow = self.gbdx.Workflow(curTasks)
+        workflow.timeout = 36000
 
-            # save the outputs to your s3 bucket.  This method only needs a folder specified.  It will create this folder in your gbd-customer-customer-data s3 bucket.
-            if runCarFinder == 1:
-                workflow.savedata(car_finder_task.outputs.data, location="%s/%s" % (outS3Folder, "carCount"))
-            if runSpfeas == 1:
-                workflow.savedata(spTask.outputs.data_out,      location="%s/%s" % (outS3Folder, "spfeas"))
-            if spfeasLoop == 1:
-                workflow.savedata(spLoopTask.outputs.data_out,  location="%s/%s" % (outS3Folder, "spfeasLoop"))
-            if runLC == 1:
-                workflow.savedata(lcTask.outputs.image,         location="%s/%s" % (outS3Folder, "lulc"))
-            if downloadImages == 1:
-                workflow.savedata(clippedRaster,                location="%s/%s" % (outS3Folder, "clippedRaster"))
-            
-            
-            
-            return (workflow)
+        # save the outputs to your s3 bucket.  This method only needs a folder specified.  It will create this folder in your gbd-customer-customer-data s3 bucket.
+        if runCarFinder == 1:
+            workflow.savedata(car_finder_task.outputs.data, location="%s/%s" % (outS3Folder, "carCount"))
+        if runSpfeas == 1:
+            workflow.savedata(spTask.outputs.data_out,      location="%s/%s" % (outS3Folder, "spfeas"))
+        if spfeasLoop == 1:
+            workflow.savedata(spLoopTask.outputs.data_out,  location="%s/%s" % (outS3Folder, "spfeasLoop"))
+        if runLC == 1:
+            workflow.savedata(lcTask.outputs.image,         location="%s/%s" % (outS3Folder, "lulc"))
+        if downloadImages == 1:
+            workflow.savedata(clippedRaster,                location="%s/%s" % (outS3Folder, "clippedRaster"))                       
+        return (workflow)
             
         
     def createTasks(self, inD, outS3Folder,
