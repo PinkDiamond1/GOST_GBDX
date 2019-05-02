@@ -29,7 +29,8 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
             'date': 0.2,
             'nadir': 0.2,
             'resolution': 0.2
-            }
+            },
+        imageType = 'DigitalGlobeAcquisition'
         ):
     '''
     print gbdx
@@ -47,12 +48,12 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
     # Define search function. Returns up to 1000 images where cloud cover smaller than 25%
     def search_unordered(bbox, _type, count=10000, cloud_cover=1):
         aoi = AOI.wkt
-        query = "item_type:{} AND item_type:DigitalGlobeAcquisition".format(_type)
+        query = "item_type:{}".format(_type)
         query += " AND attributes.cloudCover_int:<{}".format(cloud_cover)
         return gbdx.vectors.query(aoi, query, count=count)
 
     # Run search on Area of Interest (AOI). Passes in AOI in Well Known Text format (wkt)
-    records = search_unordered(AOI.wkt, 'DigitalGlobeAcquisition')
+    records = search_unordered(AOI.wkt, imageType)
     # Create list object of all catalog IDs returned in search
     ids = [r['properties']['attributes']['catalogID'] for r in records]
     # Define Counters
