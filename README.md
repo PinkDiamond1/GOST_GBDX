@@ -8,7 +8,7 @@ See the launch_* tools for executing these tools.
 # Setup
 1. Install gbdxtools **in a new conda environment, this has caused problems for Clara**
 ```
-C:\AFOLDER\Somewhere> conda -c digitalglobe install gbdxtools
+C:\AFOLDER\Somewhere> conda install -c conda-forge -c digitalglobe gbdxtools
 ```
 2. Test the gbdx install. 
 `python -c "import gbdxtools"`
@@ -17,6 +17,6 @@ C:\AFOLDER\Somewhere> conda -c digitalglobe install gbdxtools
 C:\AFOLDER\Somewhere> python
 > from gbdxtools import Interface
 > gbdx = Interface()
-> print gbdx.s3.Info
+> print gbdx.s3.info
 ```
 4. Check out the launch_* scripts to get started
