@@ -4,7 +4,7 @@ import subprocess
 ##STEPS to get AWS to work in WBG
 # 1. Open Anaconda command prompt with awscli and osgeo installed
 # 2. >> where aws ; >> where gdalbuildvrt
-# 3. Copy the two folders indicated above to C:\WBG
+# 3. Copy the two folders indicated above to magic folder
 # 4. Profit 
 
 
@@ -12,15 +12,14 @@ def tPrint(s):
     print("%s\t%s" % (time.strftime("%H:%M:%S"), s) )
 
 class gbdxURL(object):
+    ''' Class for accessing gbdxurl-based queries. Specifically checking on status of executing
+            workflows, and querying existing gbdx tasks
+    '''
     def __init__(self, gbdx, wbgComp=False):
         #Get reference to gbdx username, password, in the gbdx config file
         gbdxConfigFile = os.path.join(os.path.expanduser('~'), ".gbdx-config")
         config = configparser.RawConfigParser()  
-        ''' This part doesn't work in 3.6
-        with open(gbdxConfigFile) as f:
-            sample_config = f.read()
-        config.readfp(io.BytesIO(sample_config))
-        '''
+
         config.read(gbdxConfigFile)
         self.username = config.get('gbdx','user_name')
         self.password = config.get('gbdx','user_password')
@@ -31,8 +30,14 @@ class gbdxURL(object):
         headers = {"Authorization": "Basic %s" % self.client_id, "Content-Type": "application/x-www-form-urlencoded"}
         params = {"grant_type": "password", "username": self.username, "password": self.password }
         resultsBearer = requests.post(url, headers=headers, data=params)
-
-        self.access_token = resultsBearer.json()['access_token']
+        
+        try:
+            self.access_token = resultsBearer.json()['access_token']
+        except:
+            if resultsBearer.json()['message'] == 'Unauthorized':
+                raise ValueError("Authorization is incorrect, please check config file: %s" % gbdxConfigFile)
+            else:
+                raise ValueError("Unknown Error: %s" % resultsBearer.json()['message'])
         self.awsCommand = 'aws'
         self.generateAWSkeys()
         if wbgComp:
@@ -40,6 +45,8 @@ class gbdxURL(object):
         
     def listAllTasks(self):
         ''' list all the tasks currently registered in GBDx
+        Returns:
+            json: direct from query to gbdx
         '''
         url     = 'https://geobigdata.io/workflows/v1/tasks'
         headers = {"Authorization": "Bearer " + self.access_token}
@@ -47,6 +54,10 @@ class gbdxURL(object):
         return resultsTasks.json()['tasks']
         
     def listAllTasks_Advanced(self, outFile):
+        ''' List all tasks currently registered in GBDx, spits results with name, version, and description to outputfile
+        Args:
+            outFile (string): path to file to write output; result is a csv
+        '''
         allFunctions = {}
         for x in self.listAllTasks():
             name = x.split(":")[0]
@@ -57,7 +68,7 @@ class gbdxURL(object):
             except:
                 allFunctions[name] = val
         with open(outFile, 'w') as outFile:
-            for key, value in allFunctions.iteritems():
+            for key, value in allFunctions.items():
                 curDesc = self.descTask(key)
                 try:
                     outFile.write("%s,%s,%s\n" % (curDesc['name'], curDesc['version'], curDesc['description']))
@@ -66,19 +77,33 @@ class gbdxURL(object):
                     print(curDesc)
     def descTask(self, task):
         ''' describe the defined task
+        Args:
+            task (string): name of task to define
+        Returns:
+            json: direct from query to gbdx
         '''
         url     = 'https://geobigdata.io/workflows/v1/tasks/%s' % task
         headers = {"Authorization": "Bearer " + self.access_token}
         resultsTasks = requests.get(url,headers=headers)
         return resultsTasks.json()
         
-    def cancelWorkflow(self, task):        
+    def cancelWorkflow(self, task): 
+        ''' Cancels the requested task
+        Args:
+            task (string): task number, is obtained when executing task, or when monitoring tasks via self.monitorWorkflows()
+        Returns:
+            json: direct from query to gbdx
+        '''
         url     = 'https://geobigdata.io/workflows/v1/workflows/:%s/cancel' % task
         headers = {"Authorization": "Bearer " + self.access_token}
         resultsTasks = requests.get(url,headers=headers)
         return resultsTasks.json()
         
     def getS3Creds(self):
+        ''' Extract s3 credentials based on gbdx credentials
+        Returns:
+            json: direct from query to gbdx
+        '''
         url = "https://geobigdata.io/s3creds/v1/prefix"
         headers = {"Authorization": "Bearer " + self.access_token}
         resultsCreds = requests.get(url, headers=headers)
@@ -86,18 +111,32 @@ class gbdxURL(object):
         return(s3Creds)
         
     def listWorkflows(self):
+        ''' List all running workflows on GBDx
+        Returns:
+            json: direct from query to gbdx
+        '''
         url     = 'https://geobigdata.io/workflows/v1/workflows'
         headers = {"Authorization": "Bearer " + self.access_token}
         resultsTasks = requests.get(url,headers=headers)
         return(resultsTasks.json()['Workflows'])
     
-    def descWorkflow(self, wID):        
+    def descWorkflow(self, wID):      
+        ''' Describs the defined workflow
+        Args:
+            wID (string): task number, is obtained when executing task, or when monitoring tasks via self.monitorWorkflows()
+        Returns:
+            json: direct from query to gbdx
+        '''
         url     = 'https://geobigdata.io/workflows/v1/workflows/%s' % wID
         headers = {"Authorization": "Bearer " + self.access_token}
         resultsTasks = requests.get(url,headers=headers)
         return(resultsTasks.json())
         
     def generateAWSkeys(self):
+        ''' Generate AWS commands for getting access to AWS contents
+        Returns:
+            list: string commands to set SECRET_ACCESS_KEY, ACCESS_KEY, SESSION_TOKEN
+        '''
         url          = 'https://geobigdata.io/s3creds/v1/prefix?duration=129600'
         headers      = {'Content-Type': 'application/json',"Authorization": "Bearer " + self.access_token}
         results      = requests.get(url,headers=headers)
@@ -112,6 +151,14 @@ class gbdxURL(object):
         return (commands)
                 
     def downloadS3Contents(self, s3Folder, localFolder, recursive=False):
+        ''' Generate S3 commands to download results from GBDx S3 buckets
+        Args:
+            s3Folder (string): path to download
+            localFolder (string): path to local folder to download to. This could also be another s3 folder
+            recursive (string, optional): whether to download folder recursively or not, defaults to False
+        Returns:
+            list: string commands to execute at command line to download results
+        '''
         allCommands = self.generateAWSkeys()
         if recursive:
             allCommands.append("aws s3 cp --recursive %s %s" % (s3Folder, localFolder))
@@ -121,11 +168,12 @@ class gbdxURL(object):
         
     def listS3Contents(self, s3Folder, outFile = '', recursive=False):
         ''' List the contents of the provided s3Folder
-        s3Folder [string] - path to s3 folder WITHOUT the prefix. 
-                            The file path must be passed with a %s flag for the prefix
-        [optional] outFile [string] - path to create an output file foir the returned commands
-                                        to spit out the saved results
-        [optional] recursive [boolean] - whether to do search recusively or not
+        Args:
+            s3Folder (string): path to s3 folder WITHOUT the prefix. The file path must be passed with a %s flag for the prefix
+            outFile (string, optional): path to create an output file foir the returned commands to spit out the saved results
+            recursive (boolean, optional): whether to do search recusively or not
+        Returns:
+            list: string commands to execute at command line to download results
         '''
         allCommands = self.generateAWSkeys()
         if recursive:
@@ -140,9 +188,12 @@ class gbdxURL(object):
         return (allCommands)
     
     def processAwsList(self, inFile, searchVal):
-        ''' process the results of the above listS3Contents
-        inFile [string] - file to process
-        searchVal [string] - regular expression to search for in each line of the document
+        ''' Search for specific value (searchVal) in input file derived from listed s3 contents
+        Args:
+            inFile (string): file of listed s3 contents to process
+            searchVal (string): regular expression to search for in each line of the document
+        Returns:
+            list: rows from s3 contents text file with defined searchVal 
         '''
         allVals = []
         with open(inFile, 'r') as inFile:
@@ -152,12 +203,13 @@ class gbdxURL(object):
         return allVals
     
     def processAWS_Contents(self, inputFile, baseS3folder, outFolder, command='ls', recursive=False):
-        ''' Generate AWS commands for downloading AWS contents from aws inputFile generated
-            from listS3contents
-        [inputFile] - s3 contents file
-        [baseS3folder] - folder from which inputFile was determined
-        [outFolder] - location to download to
-        [RETURNS] - list of download commands
+        ''' Generate AWS commands for downloading AWS contents from aws inputFile generated from listS3contents
+        Args:
+            inputFile (string): path to s3 contents file
+            baseS3folder (string): s3 folder from which inputFile was determined
+            outFolder: location to download results from
+        Returns:
+            list: of S3 download commands
         '''
         commands = self.generateAWSkeys()
         with open(inputFile, 'r') as awsImages:
@@ -173,11 +225,23 @@ class gbdxURL(object):
         return commands
     
     def downloadAWS_file(self, file, outputFile):
+        ''' Generate single file download command
+        Args:
+            file (string): s3 path to file to download
+            outputFile (string): local or s3 path to copy to
+        Returns:
+            list: s3 commands to download file
+        '''
         commands = self.generateAWSkeys()
         commands.append("%s s3 cp %s %s" % (self.awsCommand, file, outputFile))
         return commands
     
     def executeAWS_file(self, awsCommands, commandFile):
+        ''' Execute a list of AWS commands
+        Args:
+            awsCommands (list or strings): All aws commands to be executed
+            commandFile (string): path to temporary file to be executed
+        '''
         with open(commandFile, 'w') as outFile:
             for l in awsCommands:
                 outFile.write(l)
@@ -186,8 +250,11 @@ class gbdxURL(object):
 
     def monitorWorkflows(self, sleepTime=60, focalWorkflows=[]):
         ''' continuously monitor currently running workflows on GBDx
-        sleepTime [integer] - abount of time to sleep between checks
-        focalWorkflows [list of numbers] - specific workflows to focus on
+        Args:
+            sleepTime (integer, optional): abount of time to sleep between checks, defaults to 60
+            focalWorkflows (list of numbers): If provided, only the specified workflows are returned
+        Returns:
+            list: of workflows separated into failed and succeeded
         '''
         curWorkflows = self.listWorkflows()
         #if there are focal workflows, focus only on that
@@ -205,6 +272,7 @@ class gbdxURL(object):
         while stillProcessing:
             stillProcessing = False
             count = 0
+            tPrint("========================================")
             for rID in curWorkflows:
                 r = self.descWorkflow(rID)
                 try:

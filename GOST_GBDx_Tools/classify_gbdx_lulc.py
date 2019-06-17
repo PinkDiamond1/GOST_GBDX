@@ -12,16 +12,16 @@ def reclassifyLandcover(inFile, outFile, color_codes ={ (0,   255, 0) :  1,
                                                         (164, 74,  164): 5,
                                                         (128, 128, 128): 6 }):
     ''' convert the 3-band RBG results of the GBDx LULC classification to single-band
-    Vegetation -    (0,   255, 0) :  1,
-    Water -         (0,   0,   128): 2,
-    bare -          (128, 64,  0):   3,
-    clouds -        (128, 255, 255): 4,
-    Shadows -       (164, 74,  164): 5,
-    unclassed -     (128, 128, 128): 6 }
+            Vegetation -    (0,   255, 0) :  1,
+            Water -         (0,   0,   128): 2,
+            bare -          (128, 64,  0):   3,
+            clouds -        (128, 255, 255): 4,
+            Shadows -       (164, 74,  164): 5,
+            unclassed -     (128, 128, 128): 6 }
     
-    INPUT 
-    inFile [string]
-    outFile [string]
+    Args:
+        inFile (string) - path to input landcover classification file
+        outFile (string) - path to output landcover classification file
     
     RETURNS
     success_variable
@@ -53,8 +53,3 @@ if __name__ == "__main__":
 
     reclassifyLandcover(inFile, inFile.replace(".tif", "_CLASSIFIED.tif"))
     reclassifyLandcover(inFile2, inFile2.replace(".tif", "_CLASSIFIED.tif"))
-    '''
-    inFile = r"Q:\WORKINGPROJECTS\Indonesia_GBDx\Balikpapan_GBDx\103001007E75D600\lulc\058350570010_01_assembly_clip_LULC.tif"
-    xx = rasterio.open(inFile)
-    x = rasterio.open(inFile.replace(".tif", "_CLASSIFIED.tif"))
-    '''

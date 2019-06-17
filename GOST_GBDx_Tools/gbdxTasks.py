@@ -8,6 +8,7 @@ import dask.array as da
 from time import strftime
 from gbdxtools import CatalogImage
 from shapely.geometry import shape
+from shapely.wkt import loads
 
 
 class GOSTTasks(object):
@@ -235,7 +236,7 @@ class GOSTTasks(object):
         curTasks = []        
         data = self.gbdx.catalog.get_data_location(catalog_id)    
         if inRaster == 'SENTINEL1':
-            #For sentinel1 imagery, no need to run APO
+            #For sentinel1 imagery, no need to run AOP
             sWkt = shapely.wkt.loads(inputWKT)
             sbbox = sWkt.bounds
             bbox = '%s,%s,%s,%s' % (sbbox[0], sbbox[3], sbbox[2], sbbox[1])
@@ -244,9 +245,12 @@ class GOSTTasks(object):
             clippedRaster = raster_clip.outputs.data
         elif inRaster == "": 
             #Run AOP and raster clip if input raster is not defined
+            ''' This seems to have stopped working
             aopParts = self.getImageParts(catalog_id, inputWKT)
+            '''
+            aopParts = [10]
             if len(aopParts) > 0:
-                aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts, 
+                aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, 
                                     enable_pansharpen=aopPan, enable_dra=aopDra, 
                                     enable_acomp=aopAcomp, bands=aopBands)
                 curTasks.append(aoptask)
@@ -291,7 +295,7 @@ class GOSTTasks(object):
             car_finder_task = self.gbdx.Task("deepcore-singleshot", data=clippedRaster)                
             curTasks.append(car_finder_task)
         if runLC == 1:
-            lcTask = self.gbdx.Task('lulc', image=clippedRaster)
+            lcTask = self.gbdx.Task('protogenV2LULC', raster=clippedRaster)
             curTasks.append(lcTask)
             
         #Define the tasks in your workflow
@@ -306,7 +310,7 @@ class GOSTTasks(object):
         if spfeasLoop == 1:
             workflow.savedata(spLoopTask.outputs.data_out,  location="%s/%s" % (outS3Folder, "spfeasLoop"))
         if runLC == 1:
-            workflow.savedata(lcTask.outputs.image,         location="%s/%s" % (outS3Folder, "lulc"))
+            workflow.savedata(lcTask.outputs.data,          location="%s/%s" % (outS3Folder, "lulc"))
         if downloadImages == 1:
             workflow.savedata(clippedRaster,                location="%s/%s" % (outS3Folder, "clippedRaster"))                       
         return (workflow)
@@ -396,7 +400,7 @@ class GOSTTasks(object):
         types = [ "IDAHOImage" ]
         filters=["catalogID ='" + catid + "'"]
 
-        sWkt = shapely.wkt.loads(wkt)
+        sWkt = loads(wkt)
         if sWkt.geom_type == "Polygon":
             results = gbdx.catalog.search(searchAreaWkt=wkt, filters=filters, types=types)
         else:

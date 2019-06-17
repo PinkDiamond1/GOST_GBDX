@@ -128,6 +128,8 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
                          (out['PanResolution'] <= cutoff_pan_res) &
                          (out['ImageBands'].isin(accepted_bands))
                         ]    
+    if out_1stcut.shape[0] == 0:
+        return(out_1stcut)
     # Apply ranking method over all non-disqualified search results for each field
     optimal_date = pd.to_datetime(optimal_date, utc = True).tz_localize(None)
 
