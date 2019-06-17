@@ -46,16 +46,23 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
         bboxx.append(AOI.bounds[coord])
 
     # Define search function. Returns up to 1000 images where cloud cover smaller than 25%
-    def search_unordered(bbox, _type, count=10000, cloud_cover=1):
+    def search_unordered(bbox, _type, count=10000, cloud_cover=25):
         aoi = AOI.wkt
         query = "item_type:{}".format(_type)
         query += " AND attributes.cloudCover_int:<{}".format(cloud_cover)
+        #print('print query')
+        #print(query)
         return gbdx.vectors.query(aoi, query, count=count)
 
     # Run search on Area of Interest (AOI). Passes in AOI in Well Known Text format (wkt)
-    records = search_unordered(AOI.wkt, imageType)
+    records = search_unordered(AOI.wkt, imageType, cloud_cover = cutoff_cloud_cover)
+
     # Create list object of all catalog IDs returned in search
     ids = [r['properties']['attributes']['catalogID'] for r in records]
+
+    #print('print records')
+    #print(records)
+
     # Define Counters
     l = 0    # number of non-IDAHO images
     scenes = [] # list containing metadata dictionaries of all scenes in our AOI 
