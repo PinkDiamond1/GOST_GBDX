@@ -12,7 +12,9 @@ from shapely.wkt import loads
 
 
 class GOSTTasks(object):
-    def __init__(self, gbdx):
+    ''' Wrapper for executing a pre-defined set of GBDx tasks
+    '''
+    def __init__(self, gbdx):        
         self.gbdx = gbdx        
         self.sensorDict = {"WORLDVIEW01":"WorldView1", "WORLDVIEW02":"WorldView2", 
                             "GEOEYE01": "GeoEye1", "QUICKBIRD02":"Quickbird",
@@ -23,13 +25,13 @@ class GOSTTasks(object):
         '''The Normalized Difference Spectral Vector normalizes all bands in an image against each other
         REFERENCE: https://ieeexplore.ieee.org/document/6587128/
         
-        INPUTS
-        inD [3D dask array] - input imagery from GBDx CatalogImage
-        sensor - definition of input sensor
-        outFile - output image chip
-        DEBUG
-        inD = CatalogImage('103001007FA97400')
-        inD = inD[:,0:1000,0:1000]
+        Args:
+            inD (3D dask array) - input imagery from GBDx CatalogImage
+            sensor (string) - definition of input sensor
+            outFile (string) - output image chip
+        Example:
+            inSource = CatalogImage('103001007FA97400')
+            inD = inSource[:,0:1000,0:1000]
         '''
         nBands = inD.shape[0]
         
@@ -54,6 +56,13 @@ class GOSTTasks(object):
         newDataset.close()
     
     def calculateIndices(self, inD, sensor, outFile):
+        ''' Calculate indices (NDVI, NDWI, BAI) from source imagery
+        
+        Args:
+            inD (3D dask array) - input imagery from GBDx CatalogImage
+            sensor (string) - definition of input sensor
+            outFile (string) - output image chip
+        '''
         outImage = inD[0:2,:,:]
         if sensor in ['WV03','WV02']:
             irBand = 7
@@ -84,14 +93,14 @@ class GOSTTasks(object):
         ''' Uses the CatalogImage object to download and write data
             http://gbdxtools.readthedocs.io/en/latest/api_reference.html#catalogimage
             
-        INPUT
-        cat_id [string] - CatalogID for Digital Globe that is present in IDAHO
-        outFile [string] - path to output image
-        OPTIONAL INPUTS
-        output [string] [IMAGE, INDICES, NDSV] - what kind of image to return. IMAGE is the raw imagery, 
-            INDICES returns a stacked NDVI, NDWI and NDSV return the Normalized Differece Spectral Vector
-        boundingBox []
-        specificImages [list of list of integers] - specific columns (first list) and rows (second list) to create
+        Args:
+            cat_id [(string) - CatalogID for Digital Globe that is present in IDAHO
+            outFile (string) - path to output image
+            output (string, optional: IMAGE, INDICES, NDSV) - what kind of image to return. 'IMAGE' is the raw imagery, 
+                    'INDICES' returns a stacked NDVI, NDWI and 'NDSV' return the Normalized Differece Spectral Vector
+            boundingBox (list of bottom, left, top, right, optional) - bounding box to subset catalog image with
+            specificImages (list of list of integers, optional) - specific columns (first list) and rows (second list) 
+                to create - used mostly for re-running missing, crashed, or broken results
         '''
         img = CatalogImage(cat_id, pansharpen=panSharpen, band_type=band_type, acomp=acomp)
         sensor = img.metadata['image']['sensorPlatformName']
@@ -156,82 +165,35 @@ class GOSTTasks(object):
                 outImage = self.calculateIndices(img, sensor, outFile)
             if output == 'NDSV': 
                 outImage = self.calculateNDSV(img, sensor, outFile)
-        return 1
+        return 1    
     
-    def downloadAOP(self, cat_id, outFolder, boundingWKT, aopDra=True, panSharpen=True, acomp=True, aopBands='Auto'):
-        ''' Uses the AOP Strip Processor to standardize and download tiles
-        [outFolder] - s3Folder for storing imagery
-        [boundingWKT] - WKT shape for selecting tiles to process 
-        https://gbdxdocs.digitalglobe.com/docs/advanced-image-preprocessor
-        '''
-        data = self.gbdx.catalog.get_data_location(cat_id)                    
-        aopParts = self.getImageParts(cat_id, boundingWKT)
-        if len(aopParts) > 0:
-            aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts,
-                                enable_pansharpen=panSharpen, enable_dra=aopDra, 
-                                enable_acomp=acomp, bands=aopBands)
-            workflow = self.gbdx.Workflow([aoptask])
-
-            # save the outputs to your s3 bucket.  This method only needs a folder specified.
-            workflow.savedata(aoptask.outputs.data, location=outFolder)  
-            return workflow
-    
-    def defineInputData(self, inSceneFile):
-        #Process gbdx params and process input scene file
-        inD = pd.read_csv(inSceneFile)
-        geometry = inD['used_scene_region_WKT'].map(shapely.wkt.loads)
-        gD = gpd.GeoDataFrame(inD, crs={'init': 'epsg:4326'}, geometry=geometry)
-        tempD = pd.DataFrame(gD.bounds)
-        tempD = tempD[["minx","maxy","maxx","miny"]]
-        inD['bbox'] = tempD[tempD.columns[0:]].apply(lambda x: ','.join(x.astype(str)),axis=1)
-        self.scenesDataFrame = inD
-
-    def reprocessMissedTasks(self, sceneFile, inS3Folder, outS3Folder, verbose=False):
-        ''' Reprocess spfeas for missing triggers created from spfeas_results.py
-        [sceneFile] - input csv with two columns, cat_id and space-delimited missing triggers
-        [inS3Folder] - s3 folder containing the clippedRaster and the original spfeas results. Must be defined
-                        as the full 
-        [outS3Folder] - OFTEN THE SAME AS inS3Folder. Can be different, will contain output in spfeas2 folder        
-        '''
-        inD = pd.read_csv(sceneFile)
-        allTasks = []
-        for index, row in inD.iterrows():
-            curTasks = []
-            catalog_id = row[0]
-            triggers = row[1]
-            inData = inS3Folder % (catalog_id, "clippedRaster")
-            outData = outS3Folder % (catalog_id, "spfeas2")
-            if verbose:
-                print ("%s, %s, %s, %s" % (inData, self.sensorDict[row[2]], triggers, outData))            
-            spTask = self.gbdx.Task("spfeas_WBG:0.4.0", data_in=inData, sensor=self.sensorDict[row[2]], 
-                       triggers=triggers, scales='8 16 32', block='4', gdal_cache=64, section_size=2000)
-            curTasks.append(spTask)
-            workflow = self.gbdx.Workflow(curTasks)
-            workflow.savedata(spTask.outputs.data_out, location=outData)
-            allTasks.append(workflow)
-        return(allTasks)
-    
-    def runSpfeas(self, inDataFolder, outDataFolder,
-                    spfeasParams={"triggers":'ndvi mean', "scales":'8 16 32', "block":'4'}):
-        curTasks = []
-        #Run spfeas on the panchromatic band (no vegetation calculations)
-        spTask = self.gbdx.Task("spfeas_WBG:0.1.3", data_in=inDataFolder, sensor=spfeasParams['SENSOR'], 
-            triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'])
-        curTasks.append(spTask)
-        workflow = self.gbdx.Workflow(curTasks)
-       
-        # save the outputs to your s3 bucket.  This method only needs a folder specified.  It will create this folder in your gbd-customer-customer-data s3 bucket.
-        workflow.savedata(spTask.outputs.data_out, location=outDataFolder)
-        return workflow
-  
     def createWorkflow(self, catalog_id, inputWKT, sensor, outS3Folder,
                     spfeasParams={"triggers":'ndvi mean', "scales":'8 16 32', "block":'4'}, 
-                    runCarFinder = 0, runSpfeas = 1, spfeasLoop = 0, runLC = 0, downloadImages = 1, 
+                    runCarFinder = 0, runSpfeas = 1, runLC = 0, downloadImages = 1, 
                     aopPan=False, aopDra=False, aopAcomp = True, aopBands='Auto', inRaster=""):
-        '''
+        ''' Create a workflow to execute on gbdx
         
-        REFERENCE:
-        LULC: https://gbdxdocs.digitalglobe.com/docs/automated-land-cover-classification-1
+        Args:
+            catalog_id (string): catalog ID to lookup in gbdx and use in execution
+            inputWKT (string wkt): shape to run analysis in - must be valid wkt
+            sensor (string): sensor name for image, necessary for executing spfeas
+            outS3Folder (string): path to store results NOT ENTIRE PATH, JUST INCLUDE NAMED PATH i.e. - bps/CityName/Results
+            spfeasParams (Dictionary, optional): parameters to execute spfeas
+            runCarFinder/runspfeas/runLC/downloadImages (1 or 0, optional): binary to define what tasks to run. 
+                Defaults to running spfeas and downloading images
+            aopPan/aopDra/aopAcomp (boolean, optional): Boolean to define what to do in AOP strip processing, defaults to ACOMP only
+            aopBands (string, optional): Defines what bands to extract, defaults to auto
+            inRaster (string, optional): s3 location of input imagery, means that ACOMP and clip are not run, useful for running
+                multiple analyses on a single area.
+        
+        Returns:
+            gbdx workflow: object to be exeucted in order to create analysis
+        
+        Reference:
+            SPFEAS: https://github.com/jgrss/spfeas
+            CARS: https://gbdxdocs.digitalglobe.com/docs/answer-type-slides#section-cars
+            ACOMP: https://gbdxdocs.digitalglobe.com/docs/advanced-image-preprocessor
+            LULC: https://gbdxdocs.digitalglobe.com/docs/answer-type-slides#section-lulc-protogen
         '''
         curTasks = []        
         data = self.gbdx.catalog.get_data_location(catalog_id)    
@@ -245,10 +207,8 @@ class GOSTTasks(object):
             clippedRaster = raster_clip.outputs.data
         elif inRaster == "": 
             #Run AOP and raster clip if input raster is not defined
-            ''' This seems to have stopped working
             aopParts = self.getImageParts(catalog_id, inputWKT)
-            '''
-            aopParts = [10]
+
             if len(aopParts) > 0:
                 aoptask = self.gbdx.Task("AOP_Strip_Processor", data=data, 
                                     enable_pansharpen=aopPan, enable_dra=aopDra, 
@@ -283,13 +243,6 @@ class GOSTTasks(object):
                n_jobs=spfeasParams['n_jobs'], use_rgb=useRGB)
             curTasks.append(spTask)
         
-        if spfeasLoop == 1:
-            #Run spfeas on the panchromatic band (no vegetation calculations)
-            spLoopTask = self.gbdx.Task("spfeas_loop:0.4.0", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
-               triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'])
-            spLoopTask.timeout = 36000
-            curTasks.append(spLoopTask)
-        
         if runCarFinder == 1:
             #Run carfinder task on clipped image            
             car_finder_task = self.gbdx.Task("deepcore-singleshot", data=clippedRaster)                
@@ -314,84 +267,10 @@ class GOSTTasks(object):
         if downloadImages == 1:
             workflow.savedata(clippedRaster,                location="%s/%s" % (outS3Folder, "clippedRaster"))                       
         return (workflow)
-            
-        
-    def createTasks(self, inD, outS3Folder,
-                    spfeasParams={"triggers":'ndvi mean', "scales":'8 16 32', "block":'4'}, 
-                    runCarFinder = 0, runSpfeas = 1, downloadImages = 1,
-                    aopPan=False, aopDra=False, aopAcomp = True, aopBands='MS'):
-        '''Create a series of task workflows to perform AOP striop, clip raster, then optionally
-            spfeas, car finding
-            
-            RETURNS - dictionary of 
-                'WORKFLOWS' - list of workflows to perform defined tasks
-                'TO_ORDERS' - list of scene IDs that have not yet been ordered        
-        '''
-        gbdx = self.gbdx
-        allTasks = []
-        forOrder = []
-        for index, row in inD.iterrows():
-            curTasks = []
-            catalog_id = row['ID']             
-            bbox = row['bbox'] 
-            inputWKT = row['used_scene_region_WKT']
-            sensor = row['Sensor']
-            data = gbdx.catalog.get_data_location(catalog_id)
-            
-            if data is None:
-                logging.info("%s is not ordered" % str(catalog_id))
-                #order_id = gbdx.ordering.order(str(row['ID']))
-                forOrder.append(str(catalog_id))
-            else:    
-                #try:    
-                aopParts = self.getImageParts(catalog_id, inputWKT)
-                s3TaskFolder = outS3Folder % ("%s_%s" % (catalog_id, "_".join(aopParts.replace(",", ""))))                
-                if len(aopParts) > 0:
-
-                    aoptask = gbdx.Task("AOP_Strip_Processor", data=data, parts=aopParts, 
-                                        enable_pansharpen=aopPan, enable_dra=aopDra, 
-                                        enable_acomp=aopAcomp, bands=aopBands)
-                    curTasks.append(aoptask)
-
-                    #clip the image
-                    raster = aoptask.outputs.data.value
-                    raster_clip = gbdx.Task("RasterClip_Extents", raster=raster, chip_ul_lr = bbox)
-                    curTasks.append(raster_clip)
-
-                    clippedRaster = raster_clip.outputs.data
-                    if runSpfeas == 1:
-                        #Run spfeas on the panchromatic band (no vegetation calculations)
-                        spTask = gbdx.Task("spfeas_WBG:0.1.3", data_in=clippedRaster, sensor=self.sensorDict[sensor], 
-                           triggers=spfeasParams['triggers'], scales=spfeasParams['scales'], block=spfeasParams['block'])
-                        curTasks.append(spTask)
-
-                    if runCarFinder == 1:
-                        #Run carfinder task on clipped image            
-                        car_finder_task = gbdx.Task("deepcore-singleshot", data=clippedRaster)
-                        curTasks.append(car_finder_task)
-
-                    #Define the tasks in your workflow
-                    workflow = gbdx.Workflow(curTasks)
-
-                    if runCarFinder == 1:
-                        # save the outputs to your s3 bucket.  This method only needs a folder specified.  It will create this folder in your gbd-customer-customer-data s3 bucket.
-                        workflow.savedata(car_finder_task.outputs.data, location=os.path.join(s3TaskFolder, "carCount"))
-
-                    if runSpfeas == 1:
-                        workflow.savedata(spTask.outputs.data_out, location=os.path.join(outS3Folder % catalog_id, "spfeas"))
-
-                    if downloadImages == 1:
-                        rasterOut = os.path.join(outS3Folder % catalog_id, "clippedRaster")
-                        workflow.savedata(raster_clip.outputs.data, location=rasterOut)
-                        #workflow.savedata(aoptask.outputs.data, location=rasterOut)
-                    allTasks.append(workflow)
-                #except Exception as e:        
-                #    logging.warning("%s could not be processed: %s" % (row['ID'], e.message))
                     
-        return( { 'WORKFLOWS':allTasks, 'TO_ORDERS':forOrder } )
         
     def getImageParts(self, catid, wkt):
-        ''' List the parts of the provided catid that intersect the wkt
+        ''' List the parts of the provided catid that intersect the wkt. Provided by DigitalGlobe staff
         
         '''
         gbdx = self.gbdx

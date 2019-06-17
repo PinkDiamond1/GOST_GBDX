@@ -13,7 +13,7 @@ from gbdxtools import Interface
 from gbdxtools.task import env
 from gbdxtools import CatalogImage
 
-def searchForImages(gbdx, AOI, outputFolder, filePrefix,
+def searchForImages(gbdx, AOI,
         cutoff_cloud_cover = 25,   # images with CC over this threshold discarded
         cutoff_overlap = 0,     # images with AOI overlap below this threshold discarded. [N.b.: keep small if AOI large.]
         cutoff_date = '1-Jan-15',  # images older than this date discarded
@@ -32,14 +32,15 @@ def searchForImages(gbdx, AOI, outputFolder, filePrefix,
             },
         imageType = 'DigitalGlobeAcquisition'
         ):
+    ''' Searches for imagery based on defined input parameters. Includes a very useful scoring index
+    Args:
+        gbdx (gbdx object) - authenticated gbdx object
+        AOI (shapely obejct) - area to search for imagery
+        ...
+        Whole lot of optional arguments related to searching
+    Returns:
+        pandas DataFrame: imagery search results with all shape information and useful attributes
     '''
-    print gbdx
-    print AOI
-    print outputFolder
-    print filePrefix
-    '''
-    missingSceneList = os.path.join(outputFolder, "%s_missing_scene_list.csv" % filePrefix)
-
     # Create bboxx - the square shaped box which will always contain the AOI.
     bboxx = []
     for coord in range(0,len(AOI.bounds)): 
