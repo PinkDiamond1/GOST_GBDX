@@ -19,6 +19,7 @@ class GOSTTasks(object):
         self.sensorDict = {"WORLDVIEW01":"WorldView1", "WORLDVIEW02":"WorldView2", 
                             "GEOEYE01": "GeoEye1", "QUICKBIRD02":"Quickbird",
                             "WORLDVIEW03_VNIR":"WorldView3",
+                            "WV03_MULTI":"WorldView3",
                             "WV03":"WorldView3",
                             "SENTINEL1":"gray"}   
     def calculateNDSV(self, inD, sensor, outFile):
@@ -169,7 +170,7 @@ class GOSTTasks(object):
     
     def createWorkflow(self, catalog_id, inputWKT, sensor, outS3Folder,
                     spfeasParams={"triggers":'ndvi mean', "scales":'8 16 32', "block":'4'}, 
-                    runCarFinder = 0, runSpfeas = 1, runLC = 0, downloadImages = 1, 
+                    runCarFinder = 0, runSpfeas = 0, runLC = 0, downloadImages = 1, spfeasLoop = 0,
                     aopPan=False, aopDra=False, aopAcomp = True, aopBands='Auto', inRaster=""):
         ''' Create a workflow to execute on gbdx
         

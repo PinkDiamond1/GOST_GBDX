@@ -1,5 +1,4 @@
 import sys, os
-import pip
 import shapely
 import time
 import json
